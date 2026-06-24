@@ -1,0 +1,255 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ProjectStatus {
+  active
+  archived
+}
+
+enum SourceType {
+  note
+  voice
+  text
+  link
+  manual
+}
+
+enum ItemType {
+  feature
+  bug
+  regression
+  decision
+  question
+  chore
+  opportunity
+}
+
+enum DevItemStatus {
+  captured
+  triaged
+  approved
+  in_build
+  shipped
+  duplicate
+  rejected
+  archived
+}
+
+enum Priority {
+  unset
+  low
+  medium
+  high
+  urgent
+}
+
+enum ArtifactType {
+  transcript
+  attachment
+  note
+  link
+}
+
+enum BuildStatus {
+  active
+  merged
+  abandoned
+}
+
+enum CurationState {
+  unreviewed
+  keep
+  archive_junk
+  duplicate
+  merge_candidate
+  canonical
+}
+
+enum InitiativeStatus {
+  proposed
+  active
+  next
+  paused
+  completed
+  archived
+}
+
+enum InitiativePriority {
+  low
+  medium
+  high
+  critical
+}
+
+enum StrategicValue {
+  beta_critical
+  launch_critical
+  growth
+  delight
+  infrastructure
+  research
+  future_vision
+}
+
+model Project {
+  id          String        @id @default(cuid())
+  name        String
+  slug        String        @unique
+  description String?
+  status      ProjectStatus @default(active)
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+  devItems    DevItem[]
+  initiatives Initiative[]
+
+  @@map("projects")
+}
+
+model DevItem {
+  id                  String        @id @default(cuid())
+  projectId           String        @map("project_id")
+  title               String
+  rawText             String        @map("raw_text")
+  normalizedSummary   String        @map("normalized_summary")
+  sourceType          SourceType    @map("source_type")
+  itemType            ItemType      @map("item_type")
+  status              DevItemStatus @default(captured)
+  priority            Priority      @default(unset)
+  duplicateOfId       String?       @map("duplicate_of_id")
+  confidenceScore     Float?        @map("confidence_score")
+  suggestedBranchName String?       @map("suggested_branch_name")
+  suggestedCommand    String?       @map("suggested_command")
+  externalKey         String?       @unique @map("external_key")
+  curationState       CurationState @default(unreviewed) @map("curation_state")
+  canonicalItemId     String?       @map("canonical_item_id")
+  curationReason      String?       @map("curation_reason")
+  qualityScore        Float?        @map("quality_score")
+  createdAt           DateTime      @default(now()) @map("created_at")
+  updatedAt           DateTime      @updatedAt @map("updated_at")
+
+  project         Project         @relation(fields: [projectId], references: [id])
+  duplicateOf     DevItem?        @relation("DuplicateRelation", fields: [duplicateOfId], references: [id])
+  duplicates      DevItem[]       @relation("DuplicateRelation")
+  canonicalItem   DevItem?        @relation("CanonicalRelation", fields: [canonicalItemId], references: [id])
+  canonicalFor    DevItem[]       @relation("CanonicalRelation")
+  matches       DevItemMatch[]  @relation("SourceItem")
+  matchedBy     DevItemMatch[]  @relation("MatchedItem")
+  artifacts       DevArtifact[]
+  activity        DevActivity[]
+  builds          DevBuild[]
+  initiativeItems InitiativeItem[]
+
+  @@index([projectId])
+  @@index([status])
+  @@index([itemType])
+  @@index([priority])
+  @@index([createdAt])
+  @@index([curationState])
+  @@map("dev_items")
+}
+
+model DevItemMatch {
+  id              String   @id @default(cuid())
+  devItemId       String   @map("dev_item_id")
+  matchedItemId   String   @map("matched_item_id")
+  similarityScore Float    @map("similarity_score")
+  matchReason     String   @map("match_reason")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  devItem     DevItem @relation("SourceItem", fields: [devItemId], references: [id], onDelete: Cascade)
+  matchedItem DevItem @relation("MatchedItem", fields: [matchedItemId], references: [id], onDelete: Cascade)
+
+  @@index([devItemId])
+  @@index([matchedItemId])
+  @@map("dev_item_matches")
+}
+
+model DevArtifact {
+  id           String       @id @default(cuid())
+  devItemId    String       @map("dev_item_id")
+  artifactType ArtifactType @map("artifact_type")
+  content      String?
+  url          String?
+  metadataJson Json?        @map("metadata_json")
+  createdAt    DateTime     @default(now()) @map("created_at")
+
+  devItem DevItem @relation(fields: [devItemId], references: [id], onDelete: Cascade)
+
+  @@index([devItemId])
+  @@map("dev_artifacts")
+}
+
+model DevActivity {
+  id        String   @id @default(cuid())
+  devItemId String   @map("dev_item_id")
+  action    String
+  note      String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  devItem DevItem @relation(fields: [devItemId], references: [id], onDelete: Cascade)
+
+  @@index([devItemId])
+  @@map("dev_activity")
+}
+
+model DevBuild {
+  id                 String      @id @default(cuid())
+  devItemId          String      @map("dev_item_id")
+  repo               String
+  branchName         String      @map("branch_name")
+  commandUsed        String?     @map("command_used")
+  planDocPath        String?     @map("plan_doc_path")
+  contractReportPath String?     @map("contract_report_path")
+  status             BuildStatus @default(active)
+  createdAt          DateTime    @default(now()) @map("created_at")
+  updatedAt          DateTime    @updatedAt @map("updated_at")
+
+  devItem DevItem @relation(fields: [devItemId], references: [id], onDelete: Cascade)
+
+  @@index([devItemId])
+  @@map("dev_builds")
+}
+
+model Initiative {
+  id             String             @id @default(cuid())
+  projectId      String             @map("project_id")
+  title          String
+  description    String?
+  status         InitiativeStatus   @default(proposed)
+  priority       InitiativePriority @default(medium)
+  strategicValue StrategicValue     @default(infrastructure) @map("strategic_value")
+  targetRelease  String?            @map("target_release")
+  scoreOverride  Int?               @map("score_override")
+  createdAt      DateTime           @default(now()) @map("created_at")
+  updatedAt      DateTime           @updatedAt @map("updated_at")
+
+  project Project          @relation(fields: [projectId], references: [id])
+  items   InitiativeItem[]
+
+  @@index([projectId])
+  @@index([status])
+  @@index([priority])
+  @@index([strategicValue])
+  @@map("initiatives")
+}
+
+model InitiativeItem {
+  id           String   @id @default(cuid())
+  initiativeId String   @map("initiative_id")
+  devItemId    String   @map("dev_item_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  initiative Initiative @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  devItem    DevItem    @relation(fields: [devItemId], references: [id], onDelete: Cascade)
+
+  @@unique([initiativeId, devItemId])
+  @@index([initiativeId])
+  @@index([devItemId])
+  @@map("initiative_items")
+}

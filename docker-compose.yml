@@ -1,0 +1,14 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: devanvil
+      POSTGRES_PASSWORD: devanvil
+      POSTGRES_DB: devanvil
+    ports:
+      - "5434:5432"
+    volumes:
+      - devanvil_pgdata:/var/lib/postgresql/data
+
+volumes:
+  devanvil_pgdata:
