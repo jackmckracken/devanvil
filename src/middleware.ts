@@ -1,12 +1,21 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { verifySessionToken } from "@/lib/auth";
+import { verifySessionToken } from "@/lib/auth-session";
 
 const PUBLIC_UI_PATHS = ["/login"];
-const PUBLIC_API_PATHS = ["/api/auth/login", "/api/dev-intake"];
+const PUBLIC_API_PATHS = [
+  "/api/auth/login",
+  "/api/auth/github",
+  "/api/dev-intake",
+  "/api/shortcuts/config",
+];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  if (pathname.startsWith("/shortcuts/")) {
+    return NextResponse.next();
+  }
 
   if (PUBLIC_API_PATHS.some((path) => pathname.startsWith(path))) {
     return NextResponse.next();

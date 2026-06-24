@@ -1,37 +1,25 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { useSearchParams } from "next/navigation";
+
+const ERROR_MESSAGES: Record<string, string> = {
+  unauthorized:
+    "Your GitHub account is not authorized to access DevAnvil.",
+  oauth_failed: "GitHub sign-in failed. Please try again.",
+  invalid_state: "Sign-in session expired. Please try again.",
+  missing_code: "GitHub did not return an authorization code.",
+  oauth_not_configured: "GitHub OAuth is not configured on this server.",
+  access_denied: "GitHub sign-in was cancelled.",
+};
 
 export default function LoginForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  async function handleSubmit(event: FormEvent) {
-    event.preventDefault();
-    setLoading(true);
-    setError(null);
-
-    const response = await fetch("/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password }),
-    });
-
-    setLoading(false);
-
-    if (!response.ok) {
-      setError("Invalid password");
-      return;
-    }
-
-    const next = searchParams.get("next") ?? "/queue";
-    router.push(next);
-    router.refresh();
-  }
+  const errorCode = searchParams.get("error");
+  const error =
+    (errorCode ? ERROR_MESSAGES[errorCode] : null) ??
+    (errorCode ? "Unable to sign in with GitHub." : null);
+  const next = searchParams.get("next") ?? "/queue";
+  const signInHref = `/api/auth/github?next=${encodeURIComponent(next)}`;
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-50 px-4">
@@ -43,29 +31,30 @@ export default function LoginForm() {
           Internal access for idea capture and triage.
         </p>
 
-        <form onSubmit={handleSubmit} className="mt-8 space-y-4">
-          <label className="block text-sm font-medium text-zinc-700">
-            Password
-            <input
-              type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2"
-              autoFocus
-            />
-          </label>
-
+        <div className="mt-8 space-y-4">
           {error ? <p className="text-sm text-red-600">{error}</p> : null}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-lg bg-orange-600 px-4 py-2 font-medium text-white hover:bg-orange-700 disabled:opacity-50"
+          <a
+            href={signInHref}
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-zinc-900 px-4 py-2 font-medium text-white hover:bg-zinc-800"
           >
-            {loading ? "Signing in..." : "Sign in"}
-          </button>
-        </form>
+            <GitHubIcon />
+            Sign in with GitHub
+          </a>
+        </div>
       </div>
     </div>
+  );
+}
+
+function GitHubIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 16 16"
+      className="h-5 w-5 fill-current"
+    >
+      <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8Z" />
+    </svg>
   );
 }

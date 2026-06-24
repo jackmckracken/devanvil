@@ -2,7 +2,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@/generated/prisma/client";
 
 /** Bump when Prisma schema changes so dev HMR does not keep a stale client. */
-const PRISMA_CLIENT_VERSION = "20260624170821_add_initiatives";
+const PRISMA_CLIENT_VERSION = "20260624200000_add_curation_fields";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;

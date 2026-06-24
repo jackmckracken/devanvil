@@ -15,6 +15,7 @@
     "import:studioops": "tsx scripts/import-studioops.ts",
     "curate:items": "tsx scripts/curate-items.ts",
     "seed:initiatives": "tsx scripts/seed-initiatives.ts",
+    "shortcuts:generate": "tsx scripts/generate-shortcuts.ts",
     "mcp": "tsx src/mcp/server.ts"
   },
   "prisma": {

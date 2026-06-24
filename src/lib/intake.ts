@@ -8,9 +8,9 @@ function resolveSourceType(
   sourceType?: string,
   url?: string,
 ): SourceType {
-  if (sourceType === "note") return "note";
+  if (sourceType === "note" || sourceType === "screenshot") return "note";
   if (sourceType === "voice") return "voice";
-  if (sourceType === "link" || url) return "link";
+  if (sourceType === "link" || sourceType === "url" || url) return "link";
   if (sourceType === "manual") return "manual";
   return "text";
 }
@@ -60,6 +60,12 @@ export async function processIntake(
   const allMatches = [...duplicates, ...related];
   const topDuplicate = duplicates[0];
 
+  const metadata = {
+    ...(input.metadata ?? {}),
+    ...(input.platform ? { platform: input.platform } : {}),
+    ...(input.sharedAt ? { sharedAt: input.sharedAt } : {}),
+  };
+
   const item = await prisma.devItem.create({
     data: {
       projectId: project.id,
@@ -78,7 +84,8 @@ export async function processIntake(
           artifactType: resolveArtifactType(sourceType),
           content: text,
           url: input.url,
-          metadataJson: input.metadata ? JSON.parse(JSON.stringify(input.metadata)) : undefined,
+          metadataJson:
+            Object.keys(metadata).length > 0 ? metadata : undefined,
         },
       },
       activity: {

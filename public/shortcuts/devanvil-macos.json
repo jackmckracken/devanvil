@@ -1,0 +1,38 @@
+{
+  "name": "Send to DevAnvil (Mac)",
+  "platform": "macos",
+  "apiUrl": "http://localhost:3000",
+  "version": "1",
+  "product": "devanvil",
+  "description": "Send selected text, links, notes, and screenshots to DevAnvil.",
+  "auth": {
+    "variable": "DEVANVIL_INGEST_TOKEN",
+    "prompt": "Enter your DevAnvil API Key",
+    "storage": "Shortcuts local storage"
+  },
+  "endpoints": {
+    "config": "http://localhost:3000/api/shortcuts/config",
+    "intake": "http://localhost:3000/api/dev-intake"
+  },
+  "payload": {
+    "text": "CaptureText",
+    "sourceType": "SourceType",
+    "projectHint": "from config.defaultProject",
+    "platform": "macos",
+    "sharedAt": "ISO8601 timestamp"
+  },
+  "sourceTypeRules": [
+    {
+      "input": "Image",
+      "sourceType": "screenshot",
+      "extractText": true
+    },
+    {
+      "input": "URL",
+      "sourceType": "url"
+    },
+    {
+      "fallback": "text"
+    }
+  ]
+}

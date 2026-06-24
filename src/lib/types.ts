@@ -8,10 +8,12 @@ import type {
 
 export type IntakeRequest = {
   text: string;
-  sourceType?: SourceType;
+  sourceType?: SourceType | "url" | "screenshot";
   projectHint?: string;
   title?: string;
   url?: string;
+  platform?: string;
+  sharedAt?: string;
   metadata?: Record<string, unknown>;
 };
 

@@ -27,6 +27,9 @@ export function AppHeader() {
           <Link href="/curation" className="text-sm text-zinc-600 hover:text-zinc-900">
             Curation
           </Link>
+          <Link href="/settings" className="text-sm text-zinc-600 hover:text-zinc-900">
+            Settings
+          </Link>
           <SignOutButton />
         </div>
       </div>

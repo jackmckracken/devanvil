@@ -253,3 +253,16 @@ model InitiativeItem {
   @@index([devItemId])
   @@map("initiative_items")
 }
+
+model IngestKey {
+  id         String    @id @default(cuid())
+  label      String    @default("DevAnvil Ingest Key")
+  keyPrefix  String    @map("key_prefix")
+  keyHash    String    @unique @map("key_hash")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  revokedAt  DateTime? @map("revoked_at")
+  lastUsedAt DateTime? @map("last_used_at")
+
+  @@index([keyPrefix])
+  @@map("ingest_keys")
+}

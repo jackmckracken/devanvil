@@ -29,8 +29,16 @@ cp .env.example .env
 Edit `.env` and set secrets:
 
 - `DEVANVIL_INGEST_TOKEN` — for iOS Shortcuts / intake API
-- `DEVANVIL_UI_PASSWORD` — for web UI login
+- `GITHUB_OAUTH_CLIENT_ID` / `GITHUB_OAUTH_CLIENT_SECRET` — GitHub OAuth app credentials
+- `GITHUB_OAUTH_ALLOWED_USERS` — comma-separated GitHub usernames allowed to sign in
 - `DEVANVIL_SESSION_SECRET` — random 32+ char string
+
+### GitHub OAuth app
+
+1. Open [GitHub Developer Settings → OAuth Apps](https://github.com/settings/developers)
+2. Create a new OAuth App
+3. Set **Authorization callback URL** to `http://localhost:3000/api/auth/github/callback` (or your `DEVANVIL_PUBLIC_URL` + `/api/auth/github/callback`)
+4. Copy the client ID and client secret into `.env`
 
 ### 3. Install and migrate
 
@@ -45,7 +53,7 @@ npm run db:setup
 npm run dev
 ```
 
-Open [http://localhost:3000/queue](http://localhost:3000/queue) and sign in with `DEVANVIL_UI_PASSWORD`.
+Open [http://localhost:3000/queue](http://localhost:3000/queue) and sign in with GitHub.
 
 ## Intake API
 
@@ -89,4 +97,4 @@ Set `OPENAI_API_KEY` (and optionally `OPENAI_BASE_URL`, `OPENAI_MODEL`) for rich
 - Next.js 16 (App Router)
 - PostgreSQL + Prisma
 - Tailwind CSS
-- Bearer token + cookie session auth
+- Bearer token + GitHub OAuth session auth

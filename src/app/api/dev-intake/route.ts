@@ -4,7 +4,7 @@ import { processIntake } from "@/lib/intake";
 import type { IntakeRequest } from "@/lib/types";
 
 export async function POST(request: NextRequest) {
-  if (!verifyIngestToken(request)) {
+  if (!(await verifyIngestToken(request))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
