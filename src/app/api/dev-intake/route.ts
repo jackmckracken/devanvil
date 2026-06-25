@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyIngestToken } from "@/lib/auth";
-import { processIntake } from "@/lib/intake";
+import { processCapture } from "@/lib/intake";
 import type { IntakeRequest } from "@/lib/types";
 
 export async function POST(request: NextRequest) {
@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const result = await processIntake(body);
+    const result = await processCapture(body);
     return NextResponse.json(result, { status: 201 });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Intake failed";

@@ -8,7 +8,6 @@ import {
   inferPotentialInvestments,
   listInvestments,
 } from "@/lib/investments/queries";
-import { seedStudioOpsInvestments } from "@/lib/investments/seed";
 import { INVESTMENT_CATEGORIES } from "@/lib/investments/categories";
 
 type SearchParams = Promise<{ project?: string; category?: string }>;
@@ -31,11 +30,6 @@ export default async function InvestmentsPage({
         </main>
       </>
     );
-  }
-
-  const count = await prisma.investment.count({ where: { projectId: project.id } });
-  if (count === 0 && projectSlug === "studioops") {
-    await seedStudioOpsInvestments(prisma, projectSlug);
   }
 
   const [projects, investments, suggested, recentlyCompleted, potential] = await Promise.all([

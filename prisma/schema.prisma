@@ -98,6 +98,7 @@ enum StrategicValue {
 }
 
 enum WorkflowCommand {
+  capture
   architectural_intake
   change_classify
   investigate
@@ -137,6 +138,27 @@ enum InvestmentLeverage {
   compound
 }
 
+enum CapturePromotion {
+  architect
+  bug
+  audit
+  research
+}
+
+enum ArchitectSessionStatus {
+  active
+  initiative_created
+  discarded
+  archived
+}
+
+enum AuditSessionStatus {
+  active
+  polish_initiative_created
+  discarded
+  archived
+}
+
 model Project {
   id          String        @id @default(cuid())
   name        String
@@ -150,8 +172,55 @@ model Project {
   protectedDomains      ProtectedDomain[]
   architecturalIntakes  ArchitecturalIntake[]
   investments           Investment[]
+  architectSessions     ArchitectSession[]
+  auditSessions         AuditSession[]
 
   @@map("projects")
+}
+
+model ArchitectSession {
+  id            String                 @id @default(cuid())
+  projectId     String                 @map("project_id")
+  captureId     String?                @map("capture_id")
+  status        ArchitectSessionStatus @default(active)
+  originalInput String                 @map("original_input")
+  analysisJson  Json?                  @map("analysis_json")
+  messagesJson  Json                   @default("[]") @map("messages_json")
+  initiativeId  String?                @unique @map("initiative_id")
+  createdAt     DateTime               @default(now()) @map("created_at")
+  updatedAt     DateTime               @updatedAt @map("updated_at")
+
+  project    Project     @relation(fields: [projectId], references: [id])
+  capture    DevItem?    @relation(fields: [captureId], references: [id], onDelete: SetNull)
+  initiative Initiative? @relation(fields: [initiativeId], references: [id], onDelete: SetNull)
+
+  @@index([projectId])
+  @@index([captureId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("architect_sessions")
+}
+
+model AuditSession {
+  id            String             @id @default(cuid())
+  projectId     String             @map("project_id")
+  captureId     String             @map("capture_id")
+  status        AuditSessionStatus @default(active)
+  originalInput String             @map("original_input")
+  scopeJson     Json?              @map("scope_json")
+  initiativeId  String?            @unique @map("initiative_id")
+  createdAt     DateTime           @default(now()) @map("created_at")
+  updatedAt     DateTime           @updatedAt @map("updated_at")
+
+  project    Project     @relation(fields: [projectId], references: [id])
+  capture    DevItem     @relation(fields: [captureId], references: [id], onDelete: Cascade)
+  initiative Initiative? @relation(fields: [initiativeId], references: [id], onDelete: SetNull)
+
+  @@index([projectId])
+  @@index([captureId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("audit_sessions")
 }
 
 model ArchitecturalIntake {
@@ -257,9 +326,12 @@ model DevItem {
   externalKey         String?       @unique @map("external_key")
   curationState       CurationState @default(unreviewed) @map("curation_state")
   canonicalItemId     String?       @map("canonical_item_id")
-  curationReason      String?       @map("curation_reason")
-  qualityScore        Float?        @map("quality_score")
-  createdAt           DateTime      @default(now()) @map("created_at")
+  curationReason      String?           @map("curation_reason")
+  qualityScore        Float?            @map("quality_score")
+  isCapture           Boolean           @default(false) @map("is_capture")
+  promotedTo          CapturePromotion? @map("promoted_to")
+  sourceCaptureId     String?           @map("source_capture_id")
+  createdAt           DateTime          @default(now()) @map("created_at")
   updatedAt           DateTime      @updatedAt @map("updated_at")
 
   project         Project         @relation(fields: [projectId], references: [id])
@@ -275,6 +347,10 @@ model DevItem {
   initiativeItems       InitiativeItem[]
   protectedDomainChanges ProtectedDomainChange[]
   investmentLinks       InvestmentWorkItem[]
+  architectSessions     ArchitectSession[]
+  auditSessions         AuditSession[]
+  sourceCapture         DevItem?           @relation("CaptureProvenance", fields: [sourceCaptureId], references: [id], onDelete: SetNull)
+  derivedFromCapture    DevItem[]          @relation("CaptureProvenance")
 
   @@index([projectId])
   @@index([status])
@@ -282,6 +358,8 @@ model DevItem {
   @@index([priority])
   @@index([createdAt])
   @@index([curationState])
+  @@index([isCapture])
+  @@index([sourceCaptureId])
   @@map("dev_items")
 }
 
@@ -363,6 +441,8 @@ model Initiative {
   project Project          @relation(fields: [projectId], references: [id])
   items   InitiativeItem[]
   investmentLinks InitiativeInvestment[]
+  architectSession ArchitectSession?
+  auditSession     AuditSession?
 
   @@index([projectId])
   @@index([status])

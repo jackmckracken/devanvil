@@ -11,6 +11,20 @@ export type CommandDefinition = {
 
 export const WORKFLOW_COMMANDS: CommandDefinition[] = [
   {
+    id: "capture",
+    slash: "/capture",
+    label: "Capture",
+    description:
+      "Frictionless capture — preserve the thought. No domains, no planning, no work items.",
+    placeholder: "Bloom hover needs another state...",
+    examples: [
+      "Artists need Creative Investments.",
+      "Workbench should support...",
+      "This belongs in Runway.",
+      "We should rethink Memory.",
+    ],
+  },
+  {
     id: "investment",
     slash: "/investment",
     label: "Investment",
@@ -26,15 +40,14 @@ export const WORKFLOW_COMMANDS: CommandDefinition[] = [
   },
   {
     id: "architectural_intake",
-    slash: "/architectural-intake",
-    label: "Architectural Intake",
+    slash: "/architect",
+    label: "Architect",
     description:
-      "Capture an idea, observation, or architectural concern. Produces intent, domains, memory, and an architectural brief.",
-    placeholder: "Artists should have somewhere to keep fun experiments...",
+      "Interactive architectural thinking partner. Understand intent before any implementation.",
+    placeholder: "Open architect on a captured idea from your inbox...",
     examples: [
-      "Artists should have somewhere to keep fun experiments.",
-      "I think Bloom hover panels should feel more tactile.",
-      "We need a way to download authenticated iOS Shortcuts.",
+      "Analyze Creative Investments from inbox",
+      "What does this idea mean architecturally?",
     ],
   },
   {
@@ -82,6 +95,9 @@ export function getCommandById(id: WorkflowCommand): CommandDefinition {
 
 export function getCommandBySlash(slash: string): CommandDefinition | null {
   const normalized = slash.toLowerCase().trim();
+  if (normalized === "/architectural-intake") {
+    return WORKFLOW_COMMANDS.find((c) => c.id === "capture") ?? null;
+  }
   return (
     WORKFLOW_COMMANDS.find(
       (c) => c.slash === normalized || c.slash.slice(1) === normalized.slice(1),

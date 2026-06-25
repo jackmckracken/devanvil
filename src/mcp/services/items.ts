@@ -1,6 +1,6 @@
 import type { DevItemStatus, ItemType } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
-import { processIntake } from "@/lib/intake";
+import { processCapture } from "@/lib/intake";
 import { buildBranchName, buildSuggestedCommand } from "@/lib/text";
 import type { SourceType } from "@/generated/prisma/client";
 import { assertFound } from "@/mcp/errors";
@@ -187,9 +187,10 @@ export async function updateItemStatus(input: UpdateItemStatusInput) {
 type CreateItemInput = z.infer<typeof createItemSchema>;
 
 export async function createItem(input: CreateItemInput) {
-  const result = await processIntake({
+  const result = await processCapture({
     text: input.text,
     projectHint: input.projectHint,
+    projectSlug: input.projectHint,
     sourceType: input.sourceType as SourceType | undefined,
   });
 
@@ -200,15 +201,15 @@ export async function createItem(input: CreateItemInput) {
     suggestedCommand?: string;
   } = {};
 
-  if (input.itemType && input.itemType !== result.itemType) {
+  if (input.itemType) {
     overrides.itemType = input.itemType;
     overrides.suggestedBranchName = buildBranchName(
       input.itemType,
-      result.title,
+      result.rawText.slice(0, 80),
     );
     overrides.suggestedCommand = buildSuggestedCommand(
       input.itemType,
-      result.title,
+      result.rawText.slice(0, 80),
       result.projectSlug,
     );
   }
@@ -219,13 +220,13 @@ export async function createItem(input: CreateItemInput) {
 
   if (Object.keys(overrides).length > 0) {
     await prisma.devItem.update({
-      where: { id: result.itemId },
+      where: { id: result.captureId },
       data: {
         ...overrides,
         activity: {
           create: {
             action: "updated",
-            note: "Fields adjusted after MCP intake (itemType/status override)",
+            note: "Fields adjusted after MCP capture (itemType/status override)",
           },
         },
       },
@@ -234,18 +235,18 @@ export async function createItem(input: CreateItemInput) {
 
   await prisma.devActivity.create({
     data: {
-      devItemId: result.itemId,
+      devItemId: result.captureId,
       action: "mcp_created",
-      note: "Item created via DevAnvil MCP",
+      note: "Capture created via DevAnvil MCP",
     },
   });
 
-  const item = await getItem({ itemId: result.itemId });
+  const item = await getItem({ itemId: result.captureId });
   return {
     ...item,
     classification: {
-      matches: result.matches,
-      confidenceScore: result.confidenceScore,
+      captureId: result.captureId,
+      status: result.status,
     },
   };
 }

@@ -20,6 +20,9 @@ type ItemDetailData = {
   suggestedBranchName: string | null;
   suggestedCommand: string | null;
   createdAt: string;
+  sourceCaptureId: string | null;
+  sourceCapture: { id: string; rawText: string } | null;
+  acceptanceCriteria: string | null;
   project: { name: string; slug: string };
   duplicateOf: { id: string; title: string; status: string } | null;
   matches: {
@@ -91,6 +94,12 @@ export function ItemDetail({ item }: { item: ItemDetailData }) {
             ← Back to queue
           </Link>
           <h1 className="mt-2 text-3xl font-semibold text-zinc-900">{item.title}</h1>
+          {item.sourceCapture && (
+            <p className="mt-2 text-sm text-zinc-500">
+              From capture:{" "}
+              <span className="text-zinc-700 line-clamp-1">{item.sourceCapture.rawText}</span>
+            </p>
+          )}
           <div className="mt-3 flex flex-wrap gap-2">
             <StatusBadge status={item.status} />
             <TypeBadge type={item.itemType as never} />
@@ -117,6 +126,17 @@ export function ItemDetail({ item }: { item: ItemDetailData }) {
             </h2>
             <p className="mt-3 text-zinc-800">{item.normalizedSummary}</p>
           </section>
+
+          {item.acceptanceCriteria && (
+            <section className="rounded-xl border border-red-100 bg-red-50/40 p-5 shadow-sm">
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-red-700">
+                Acceptance Criteria
+              </h2>
+              <pre className="mt-3 whitespace-pre-wrap text-sm text-zinc-800">
+                {item.acceptanceCriteria.replace(/^Acceptance criteria:\n\n/, "")}
+              </pre>
+            </section>
+          )}
 
           <section className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">

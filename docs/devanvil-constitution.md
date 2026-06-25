@@ -109,7 +109,19 @@ Only then should implementation begin.
 
 ---
 
-## Article IX — Every Decision Leaves Memory
+## Article IX — Clarity Over Output
+
+Hewn products do not optimize for producing output. They optimize for **producing clarity**.
+
+The artifact is never the chat. The artifact is the user's understanding made visible.
+
+In DevAnvil, the Mental Model is that artifact — the same role the Bloom plays in Signal. Conversation is temporary; the living model is permanent until commit.
+
+See [Cognitive Interface](./devanvil-cognitive-interface.md) for the Hewn-wide product philosophy.
+
+---
+
+## Article X — Every Decision Leaves Memory
 
 No important architectural decision should disappear.
 
@@ -119,7 +131,7 @@ The goal is continuity, not documentation.
 
 ---
 
-## Article X — Preserve Intent. Enable Evolution.
+## Article XI — Preserve Intent. Enable Evolution.
 
 This is the governing principle of DevAnvil.
 
@@ -151,17 +163,21 @@ If the answer to any question is **no**, the proposal should be revised before i
 ## Authority Hierarchy
 
 ```
-Constitution          ← philosophy (this document)
+Constitution (devanvil-constitution.md)           ← philosophy — highest authority
         ↓
-Ontology              ← structure (devanvil-ontology.md)
+Cognitive Interface (devanvil-cognitive-interface.md)  ← Hewn product philosophy (Signal ↔ DevAnvil)
         ↓
-Architectural Method  ← process (devanvil-architectural-method.md)
+Ontology (devanvil-ontology.md)                   ← structure, invariants
         ↓
-Execution Model       ← behavior (devanvil-execution-model.md)
+Architectural Method (devanvil-architectural-method.md)  ← decision process
         ↓
-Contracts             ← behavior in repos (Records)
+Workflow Model (devanvil-workflow-model.md)              ← Capture + daily modes
         ↓
-Implementation        ← code, schema, API, UI, MCP
+Execution Model (devanvil-execution-model.md)            ← governance pipeline
+        ↓
+Contracts (Records in repos)                             ← behavior
+        ↓
+Implementation                                         ← code, schema, API, UI, MCP
 ```
 
 When documents conflict:
@@ -182,7 +198,9 @@ Both must pass.
 | Document | Role |
 |----------|------|
 | [devanvil-constitution.md](./devanvil-constitution.md) | Philosophy — highest authority |
+| [devanvil-cognitive-interface.md](./devanvil-cognitive-interface.md) | Hewn product philosophy — clarity over output |
 | [devanvil-ontology.md](./devanvil-ontology.md) | Structure, invariants, completeness test |
+| [devanvil-workflow-model.md](./devanvil-workflow-model.md) | Capture-first daily workflow |
 | [devanvil-architectural-method.md](./devanvil-architectural-method.md) | How architectural decisions are made |
 | [devanvil-execution-model.md](./devanvil-execution-model.md) | How DevAnvil executes decisions automatically |
 | [mcp.md](./mcp.md) | MCP tool reference (implementation) |

@@ -12,7 +12,10 @@ export function AppHeader() {
           <p className="text-sm text-zinc-500">Architectural Operating System</p>
         </div>
         <div className="flex items-center gap-4">
-          <Link href="/workspace" className="text-sm font-medium text-orange-600 hover:text-orange-700">
+          <Link href="/inbox" className="text-sm font-medium text-orange-600 hover:text-orange-700">
+            Inbox
+          </Link>
+          <Link href="/workspace" className="text-sm text-zinc-600 hover:text-zinc-900">
             Workspace
           </Link>
           <Link href="/investments" className="text-sm text-emerald-600 hover:text-emerald-700">

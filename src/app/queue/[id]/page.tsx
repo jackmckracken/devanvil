@@ -17,6 +17,12 @@ export default async function ItemDetailPage(context: RouteContext) {
       duplicateOf: {
         select: { id: true, title: true, status: true },
       },
+      sourceCapture: {
+        select: { id: true, rawText: true, isCapture: true },
+      },
+      artifacts: {
+        orderBy: { createdAt: "asc" },
+      },
       matches: {
         include: {
           matchedItem: {
@@ -40,6 +46,13 @@ export default async function ItemDetailPage(context: RouteContext) {
     notFound();
   }
 
+  const acceptanceArtifact = item.artifacts.find(
+    (a) =>
+      a.metadataJson &&
+      typeof a.metadataJson === "object" &&
+      (a.metadataJson as { kind?: string }).kind === "acceptance_criteria",
+  );
+
   return (
     <>
       <AppHeader />
@@ -47,6 +60,9 @@ export default async function ItemDetailPage(context: RouteContext) {
         <ItemDetail
           item={{
             ...item,
+            sourceCaptureId: item.sourceCaptureId,
+            sourceCapture: item.sourceCapture,
+            acceptanceCriteria: acceptanceArtifact?.content ?? null,
             createdAt: item.createdAt.toISOString(),
             activity: item.activity.map((entry) => ({
               ...entry,

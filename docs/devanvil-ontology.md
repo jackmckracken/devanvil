@@ -951,7 +951,7 @@ If the Constitution is wrong: **change the Constitution deliberately** — it sh
 **Implications:**
 - Code, docs, and MCP tools are downstream of Constitution → Ontology
 - Ontology amendments require explicit revision (version bump, acceptance)
-- Constitutional Test (Article X) applies when philosophy is at stake; Completeness Test applies when structure is at stake
+- Constitutional Test (Article XI) applies when philosophy is at stake; Completeness Test applies when structure is at stake
 - "We've always done it this way" is not grounds for violation
 
 **Violation examples:**
@@ -984,11 +984,15 @@ If the Constitution is wrong: **change the Constitution deliberately** — it sh
 ```
 Constitution (devanvil-constitution.md)           ← philosophy — highest authority
         ↓
+Cognitive Interface (devanvil-cognitive-interface.md)  ← Hewn product philosophy (Signal ↔ DevAnvil)
+        ↓
 Ontology (this document)                          ← structure, invariants
         ↓
 Architectural Method (devanvil-architectural-method.md)  ← decision process
         ↓
-Execution Model (devanvil-execution-model.md)            ← behavioral spec
+Workflow Model (devanvil-workflow-model.md)              ← Capture + daily modes (Architect, Audit, Bug, Forge)
+        ↓
+Execution Model (devanvil-execution-model.md)            ← governance pipeline
         ↓
 Contracts (Records in repos)                             ← behavior
         ↓
@@ -1006,15 +1010,17 @@ See [DevAnvil Constitution — Authority Hierarchy](./devanvil-constitution.md#a
 1. The [Constitution](./devanvil-constitution.md) is accepted
 2. This Ontology (v2.1) is accepted
 3. The [Architectural Method](./devanvil-architectural-method.md) is accepted for significant work
-4. The [Execution Model](./devanvil-execution-model.md) is accepted as behavioral specification
-5. The feature proposal passes the Completeness Test (Part 13)
-6. The feature proposal passes the Constitutional Test ([Constitution](./devanvil-constitution.md#constitutional-test))
-7. The feature proposal violates no Ontological Invariant (Part 15)
+4. The [Workflow Model](./devanvil-workflow-model.md) is accepted as operational specification
+5. The [Execution Model](./devanvil-execution-model.md) is accepted as governance pipeline specification
+6. The feature proposal passes the Completeness Test (Part 13)
+7. The feature proposal passes the Constitutional Test ([Constitution](./devanvil-constitution.md#constitutional-test))
+8. The feature proposal violates no Ontological Invariant (Part 15)
 
 ### Acceptance checklist
 
 - [ ] [Constitution v1.0](./devanvil-constitution.md) accepted as highest authority
 - [ ] [Architectural Method v1.0](./devanvil-architectural-method.md) accepted
+- [ ] [Workflow Model v1.1](./devanvil-workflow-model.md) accepted
 - [ ] [Execution Model v1.0](./devanvil-execution-model.md) accepted
 - [ ] Intent-first canonical stack accepted (Part 1)
 - [ ] Evidence replaces Build (Part 2)

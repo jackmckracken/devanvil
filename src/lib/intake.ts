@@ -1,5 +1,7 @@
 import type { ArtifactType, SourceType } from "@/generated/prisma/client";
 import { classifyIntake } from "@/lib/classifier";
+import { toCaptureTitle } from "@/lib/capture/queries";
+import type { CaptureResult } from "@/lib/capture/types";
 import { prisma } from "@/lib/db";
 import { findMatches, persistMatches } from "@/lib/duplicate-detection";
 import type { ClassificationResult, IntakeRequest } from "@/lib/types";
@@ -20,6 +22,78 @@ function resolveArtifactType(sourceType: SourceType): ArtifactType {
   if (sourceType === "link") return "link";
   if (sourceType === "note") return "note";
   return "note";
+}
+
+export async function processCapture(
+  input: IntakeRequest & { projectSlug?: string },
+): Promise<CaptureResult> {
+  const text = input.text?.trim();
+  if (!text) {
+    throw new Error("text is required");
+  }
+
+  const projects = await prisma.project.findMany({
+    where: { status: "active" },
+    select: { id: true, name: true, slug: true },
+    orderBy: { name: "asc" },
+  });
+
+  if (projects.length === 0) {
+    throw new Error("No active projects configured");
+  }
+
+  const project =
+    projects.find((p) => p.slug === input.projectSlug) ??
+    projects.find((p) => p.slug === input.projectHint) ??
+    projects[0]!;
+
+  const sourceType = resolveSourceType(input.sourceType, input.url);
+  const title = input.title?.trim() || toCaptureTitle(text);
+
+  const metadata = {
+    ...(input.metadata ?? {}),
+    ...(input.platform ? { platform: input.platform } : {}),
+    ...(input.sharedAt ? { sharedAt: input.sharedAt } : {}),
+  };
+
+  const item = await prisma.devItem.create({
+    data: {
+      projectId: project.id,
+      title,
+      rawText: text,
+      normalizedSummary: text,
+      sourceType,
+      itemType: "question",
+      status: "captured",
+      isCapture: true,
+      artifacts: {
+        create: {
+          artifactType: resolveArtifactType(sourceType),
+          content: text,
+          url: input.url,
+          metadataJson:
+            Object.keys(metadata).length > 0 ? metadata : undefined,
+        },
+      },
+      activity: {
+        create: {
+          action: "captured",
+          note: "Captured — no classification",
+        },
+      },
+    },
+    include: { project: true },
+  });
+
+  return {
+    captureId: item.id,
+    project: project.name,
+    projectSlug: project.slug,
+    status: "captured",
+    rawText: text,
+    sourceType,
+    createdAt: item.createdAt.toISOString(),
+  };
 }
 
 export async function processIntake(

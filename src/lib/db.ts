@@ -2,7 +2,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@/generated/prisma/client";
 
 /** Bump when Prisma schema changes so dev HMR does not keep a stale client. */
-const PRISMA_CLIENT_VERSION = "20260625190754_add_investments";
+const PRISMA_CLIENT_VERSION = "20260625203105_add_audit_sessions_and_capture_provenance";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;

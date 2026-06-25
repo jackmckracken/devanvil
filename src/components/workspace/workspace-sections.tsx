@@ -1,5 +1,15 @@
 import Link from "next/link";
+import type { CaptureView } from "@/lib/capture/types";
 import type { getPortfolioFocus } from "@/lib/initiatives/ready-items";
+import type { ArchitectAnalysis } from "@/lib/architect/types";
+
+type RecentArchitect = {
+  id: string;
+  originalInput: string;
+  status: string;
+  analysisJson: unknown;
+  createdAt: Date;
+};
 
 type RecentIntake = {
   id: string;
@@ -12,7 +22,9 @@ type RecentIntake = {
 
 type WorkspaceSectionsProps = {
   projectSlug: string;
-  recentIntakes: RecentIntake[];
+  recentArchitect: RecentArchitect[];
+  inboxCaptures: CaptureView[];
+  inboxCount: number;
   readyItems: Awaited<ReturnType<typeof getPortfolioFocus>>["readyItems"];
   recentInvestigations: RecentIntake[];
   domainCount: number;
@@ -20,29 +32,62 @@ type WorkspaceSectionsProps = {
 
 export function WorkspaceSections({
   projectSlug,
-  recentIntakes,
+  recentArchitect,
+  inboxCaptures,
+  inboxCount,
   readyItems,
   recentInvestigations,
   domainCount,
 }: WorkspaceSectionsProps) {
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-      <Section title="Recent Architectural Intakes" href={`/workspace?project=${projectSlug}`}>
-        {recentIntakes.length === 0 ? (
-          <EmptyState>No intakes yet. Start with an idea above.</EmptyState>
+      <Section title="Recent Architect Sessions" href={`/workspace?project=${projectSlug}`}>
+        {recentArchitect.length === 0 ? (
+          <EmptyState>No architect sessions yet. Promote a capture from the Inbox.</EmptyState>
         ) : (
           <ul className="space-y-2">
-            {recentIntakes.map((intake) => (
-              <li key={intake.id}>
+            {recentArchitect.map((s) => {
+              const analysis = s.analysisJson as ArchitectAnalysis | null;
+              const title =
+                analysis?.suggestedInitiative.title ??
+                analysis?.potentialConcepts[0]?.name ??
+                "Architect session";
+              return (
+                <li key={s.id}>
+                  <Link
+                    href={`/architect/${s.id}`}
+                    className="block rounded-lg p-2 hover:bg-violet-50"
+                  >
+                    <p className="text-sm font-medium text-zinc-900 line-clamp-1">{title}</p>
+                    <p className="text-xs text-violet-500">
+                      architect · {analysis?.confidence ?? "—"}% · {s.status.replace(/_/g, " ")} ·{" "}
+                      {formatRelative(s.createdAt)}
+                    </p>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </Section>
+
+      <Section title={`Inbox (${inboxCount})`} href={`/inbox?project=${projectSlug}`}>
+        {inboxCaptures.length === 0 ? (
+          <EmptyState>Nothing captured yet. Type an idea above — no planning required.</EmptyState>
+        ) : (
+          <ul className="space-y-2">
+            {inboxCaptures.map((capture) => (
+              <li key={capture.id}>
                 <Link
-                  href={`/workspace/${intake.id}`}
-                  className="block rounded-lg p-2 hover:bg-zinc-50"
+                  href={`/inbox?project=${projectSlug}`}
+                  className="block rounded-lg p-2 hover:bg-orange-50"
                 >
-                  <p className="text-sm font-medium text-zinc-900 line-clamp-1">
-                    {intake.intent ?? intake.rawInput}
+                  <p className="text-sm font-medium text-zinc-900 line-clamp-2">
+                    {capture.rawText}
                   </p>
-                  <p className="text-xs text-zinc-400">
-                    {intake.command.replace(/_/g, " ")} · {formatRelative(intake.createdAt)}
+                  <p className="text-xs text-orange-500">
+                    captured · {formatRelative(new Date(capture.createdAt))}
+                    {capture.suggestedMode ? ` · maybe ${capture.suggestedMode.mode}` : ""}
                   </p>
                 </Link>
               </li>

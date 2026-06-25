@@ -24,6 +24,7 @@ export default async function QueuePage({
     prisma.project.findMany({ orderBy: { name: "asc" } }),
     prisma.devItem.findMany({
       where: {
+        isCapture: false,
         ...(filters.project ? { project: { slug: filters.project } } : {}),
         ...(filters.itemType ? { itemType: filters.itemType as ItemType } : {}),
         ...(filters.status

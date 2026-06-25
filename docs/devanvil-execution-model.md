@@ -1,7 +1,11 @@
 # DevAnvil Execution Model
 
 **Version:** 1.0  
-**Status:** Behavioral specification for DevAnvil
+**Status:** Behavioral specification for DevAnvil — **Governance Pipeline**
+
+> **Daily workflow** is defined in [devanvil-workflow-model.md](./devanvil-workflow-model.md):  
+> **Capture** (universal entry) → **Understand** → **Architect | Audit | Bug** → **Forge** → **Evidence** → **Memory**.  
+> This document defines the **internal governance pipeline** inside Audit and Forge when architectural rigor is required.
 
 ---
 
@@ -10,11 +14,12 @@
 The [Constitution](./devanvil-constitution.md) defines **principles**.  
 The [Ontology](./devanvil-ontology.md) defines the **conceptual model**.  
 The [Architectural Method](./devanvil-architectural-method.md) defines how architects make decisions.  
-The Execution Model defines **how DevAnvil executes that method automatically**.
+The [Workflow Model](./devanvil-workflow-model.md) defines **Capture** as the universal entry and **how builders interpret and execute work** (Architect, Audit, Bug, Forge).  
+The Execution Model defines **how DevAnvil enforces governance** on protected architectural change.
 
-This document is not an implementation specification. It is the **behavioral specification** for DevAnvil itself.
+This document is not an implementation specification. It is the **behavioral specification** for governed execution inside DevAnvil.
 
-The goal: every AI agent, Forge workflow, MCP tool, and future automation behaves consistently because they all execute the same architectural process.
+The goal: every AI agent, Forge workflow, MCP tool, and future automation behaves consistently because they all execute the same architectural process when rigor is required.
 
 The software may change. The execution model should remain recognizable across every future generation of DevAnvil.
 
@@ -24,20 +29,20 @@ The software may change. The execution model should remain recognizable across e
 
 DevAnvil does not execute tasks.
 
-DevAnvil executes **architectural reasoning**.
+DevAnvil executes **architectural reasoning** when building or auditing governed subsystems.
 
 Implementation is only one stage of that reasoning.
 
-Every feature request, bug fix, refactor, experiment, or investigation should move through the same execution pipeline.
+Protected-domain work must move through the full pipeline below. Fast-path modes (Bug, simple Forge on advisory domains) may abbreviate — see [Workflow Model](./devanvil-workflow-model.md).
 
 ---
 
-## The Canonical Execution Pipeline
+## The Canonical Governance Pipeline
 
-Every architectural change executes the following state machine:
+Governance begins **after Capture**. A captured thought may never enter this pipeline. Once Forge or Audit touches a protected domain, the following states apply:
 
 ```
-Request
+Request                    ← promoted capture or work item (not raw capture)
   ↓
 Intent Resolution
   ↓
@@ -74,18 +79,19 @@ Ship
 
 **Input** may originate from:
 
+- Promoted Capture (after Architect, Bug, or Audit triage)
 - Forge
 - MCP
-- User prompt
-- GitHub issue
 - Work item
 - Regression
-- Audit
+- Audit finding
 - Runtime alert
 
-**Output:** Normalized architectural request — title, summary, source, project scope, linked Work Item if applicable.
+**Not from:** raw Inbox capture — Capture does not enter the governance pipeline directly.
 
-**Behavior:** Intake classification runs. Duplicate detection may link to existing Work Items.
+**Output:** Normalized architectural request — title, summary, source, project scope, linked Work Item or Capture ID if applicable.
+
+**Behavior:** Triage classification may link to existing Work Items. Raw capture storage has already occurred upstream.
 
 ---
 
@@ -508,7 +514,9 @@ Ontology                  ← what
         ↓
 Architectural Method      ← how architects think
         ↓
-Execution Model           ← how DevAnvil thinks (this document)
+Workflow Model            ← Capture + daily modes (Architect, Audit, Bug, Forge)
+        ↓
+Execution Model           ← governance pipeline (this document)
         ↓
 Architectural Intent
         ↓
@@ -532,7 +540,8 @@ Each layer answers a different question:
 | Constitution | Why do we decide this way? |
 | Ontology | What objects exist? |
 | Method | How should architects proceed? |
-| Execution Model | How does DevAnvil enforce that proceed? |
+| Workflow Model | What kind of thinking — after Capture? |
+| Execution Model | How does DevAnvil enforce governance on protected work? |
 | Intent → Memory | What is being preserved and proven? |
 
 Everything below the Execution Model becomes an **execution** of those four foundational layers.
@@ -546,7 +555,8 @@ Everything below the Execution Model becomes an **execution** of those four foun
 | [devanvil-constitution.md](./devanvil-constitution.md) | Philosophy |
 | [devanvil-ontology.md](./devanvil-ontology.md) | Structure and invariants |
 | [devanvil-architectural-method.md](./devanvil-architectural-method.md) | Human decision process |
-| [devanvil-execution-model.md](./devanvil-execution-model.md) | Machine behavioral spec (this document) |
+| [devanvil-workflow-model.md](./devanvil-workflow-model.md) | **Daily workflow** — Capture + modes (Architect, Audit, Bug, Forge) |
+| [devanvil-execution-model.md](./devanvil-execution-model.md) | Governance pipeline (this document) |
 | Domain Records (in repos) | Contracts, catalogs, golden masters |
 | [mcp.md](./mcp.md) | MCP tool reference (implementation) |
 

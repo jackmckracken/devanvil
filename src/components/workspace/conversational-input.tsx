@@ -3,11 +3,22 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { WORKFLOW_COMMANDS } from "@/lib/workflow/commands";
+import { parseWorkflowInput } from "@/lib/workflow/parse-input";
 import type { WorkflowCommand } from "@/generated/prisma/client";
+
+const CAPTURE_COMMANDS: WorkflowCommand[] = ["capture"];
+const ARCHITECT_COMMANDS: WorkflowCommand[] = ["architectural_intake"];
+
+const WORKFLOW_ONLY_COMMANDS: WorkflowCommand[] = [
+  "change_classify",
+  "investigate",
+  "ship",
+  "investment",
+];
 
 type ConversationalInputProps = {
   projectSlug: string;
-  onResult?: (intakeId: string) => void;
+  onResult?: (captureId: string) => void;
 };
 
 export function ConversationalInput({ projectSlug, onResult }: ConversationalInputProps) {
@@ -33,7 +44,55 @@ export function ConversationalInput({ projectSlug, onResult }: ConversationalInp
     setLoading(true);
     setError(null);
 
+    const parsed = selectedCommand
+      ? { command: selectedCommand, body: trimmed }
+      : parseWorkflowInput(trimmed);
+
+    const useArchitect = ARCHITECT_COMMANDS.includes(parsed.command);
+    const useCapture =
+      CAPTURE_COMMANDS.includes(parsed.command) ||
+      (!selectedCommand && !WORKFLOW_ONLY_COMMANDS.includes(parsed.command));
+
+    const bodyText =
+      parsed.body || trimmed.replace(/^\/[^\n]*\n?/, "").trim() || trimmed;
+
     try {
+      if (useArchitect) {
+        if (!bodyText) {
+          throw new Error("Add text to architect, or pick a capture from the Inbox");
+        }
+        const response = await fetch("/api/architect", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: bodyText, projectSlug }),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error ?? "Architect failed");
+        setText("");
+        setSelectedCommand(null);
+        router.push(`/architect/${data.id}`);
+        return;
+      }
+
+      if (useCapture) {
+        const response = await fetch("/api/capture", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: bodyText, projectSlug }),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error ?? "Capture failed");
+        setText("");
+        setSelectedCommand(null);
+
+        if (onResult) {
+          onResult(data.captureId);
+        } else {
+          router.push(`/inbox?project=${projectSlug}`);
+        }
+        return;
+      }
+
       const response = await fetch("/api/workflow", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -120,6 +179,20 @@ export function ConversationalInput({ projectSlug, onResult }: ConversationalInp
     return () => window.removeEventListener("keydown", handleGlobalKey);
   }, []);
 
+  const submitLabel =
+    selectedCommand === "architectural_intake"
+      ? "Architect"
+      : selectedCommand && WORKFLOW_ONLY_COMMANDS.includes(selectedCommand)
+        ? "Run"
+        : "Capture";
+
+  const loadingLabel =
+    selectedCommand === "architectural_intake"
+      ? "Architecting..."
+      : selectedCommand && WORKFLOW_ONLY_COMMANDS.includes(selectedCommand)
+        ? "Running..."
+        : "Capturing...";
+
   return (
     <div className="relative">
       {selectedCommand && (
@@ -146,14 +219,14 @@ export function ConversationalInput({ projectSlug, onResult }: ConversationalInp
           value={text}
           onChange={(e) => handleChange(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Capture an idea... (type / for commands)"
+          placeholder="What did you notice? (type / for commands, ⌘↵ to capture)"
           rows={4}
           className="w-full resize-none rounded-xl bg-transparent px-4 py-4 text-zinc-900 placeholder:text-zinc-400 focus:outline-none"
           disabled={loading}
         />
 
         <div className="flex items-center justify-between border-t border-zinc-100 px-4 py-2">
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {WORKFLOW_COMMANDS.map((cmd) => (
               <button
                 key={cmd.id}
@@ -172,7 +245,7 @@ export function ConversationalInput({ projectSlug, onResult }: ConversationalInp
             disabled={loading || !text.trim()}
             className="rounded-lg bg-orange-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-orange-700 disabled:opacity-40"
           >
-            {loading ? "Thinking..." : "Submit"}
+            {loading ? loadingLabel : submitLabel}
           </button>
         </div>
       </div>

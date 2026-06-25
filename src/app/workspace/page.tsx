@@ -4,10 +4,11 @@ import { ConversationalInput } from "@/components/workspace/conversational-input
 import { WorkspaceSections } from "@/components/workspace/workspace-sections";
 import { prisma } from "@/lib/db";
 import { getPortfolioFocus } from "@/lib/initiatives/ready-items";
-import { getRecentIntakes, getRecentInvestigations } from "@/lib/workflow/memory";
+import { listRecentArchitectSessions } from "@/lib/architect/session";
+import { countInboxCaptures, listInboxCaptures } from "@/lib/capture/queries";
+import { getRecentInvestigations } from "@/lib/workflow/memory";
 import { MomentumPanel } from "@/components/investments/momentum-panel";
 import { getMomentumSnapshot } from "@/lib/investments/momentum";
-import { seedStudioOpsInvestments } from "@/lib/investments/seed";
 import { seedProtectedDomains } from "@/lib/protected-domains/seed";
 
 type SearchParams = Promise<{ project?: string }>;
@@ -39,17 +40,12 @@ export default async function WorkspacePage({
     await seedProtectedDomains(prisma, projectSlug);
   }
 
-  const investmentCount = await prisma.investment.count({
-    where: { projectId: project.id },
-  });
-  if (investmentCount === 0 && projectSlug === "studioops") {
-    await seedStudioOpsInvestments(prisma, projectSlug);
-  }
-
-  const [projects, recentIntakes, portfolioFocus, recentInvestigations, finalDomainCount, momentum] =
+  const [projects, recentArchitect, inboxCaptures, inboxCount, portfolioFocus, recentInvestigations, finalDomainCount, momentum] =
     await Promise.all([
       prisma.project.findMany({ orderBy: { name: "asc" } }),
-      getRecentIntakes(projectSlug, 6),
+      listRecentArchitectSessions(projectSlug, 6),
+      listInboxCaptures(projectSlug, 6),
+      countInboxCaptures(projectSlug),
       getPortfolioFocus(prisma, projectSlug),
       getRecentInvestigations(projectSlug, 4),
       prisma.protectedDomain.count({ where: { projectId: project.id } }),
@@ -59,14 +55,14 @@ export default async function WorkspacePage({
   return (
     <>
       <AppHeader />
-      <main className="mx-auto max-w-5xl space-y-10 px-4 py-10">
+      <main className="mx-auto max-w-7xl space-y-10 px-4 py-10">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <h1 className="text-3xl font-semibold text-zinc-900">
               What are we building today?
             </h1>
             <p className="mt-1 text-zinc-500">
-              Start with an idea. DevAnvil thinks architecturally before creating work items.
+              Capture ideas fast. Architect when you&apos;re ready to think.
             </p>
           </div>
           <ProjectSwitcher projects={projects} current={projectSlug} />
@@ -78,7 +74,9 @@ export default async function WorkspacePage({
 
         <WorkspaceSections
           projectSlug={projectSlug}
-          recentIntakes={recentIntakes}
+          recentArchitect={recentArchitect}
+          inboxCaptures={inboxCaptures}
+          inboxCount={inboxCount}
           readyItems={portfolioFocus.readyItems}
           recentInvestigations={recentInvestigations}
           domainCount={finalDomainCount}
