@@ -21,6 +21,15 @@ import {
   linkItemToInitiativeSchema,
   portfolioFocusSchema,
   PRIORITIES,
+  protectedDomainArtifactsSchema,
+  protectedDomainAuditSchema,
+  protectedDomainChangeGatesSchema,
+  protectedDomainChecklistSchema,
+  protectedDomainRecentChangesSchema,
+  protectedDomainStatusSchema,
+  protectedDomainsSchema,
+  detectProtectedDomainsSchema,
+  getProtectedDomainSchema,
   searchInitiativesSchema,
   searchItemsSchema,
   SOURCE_TYPES,
@@ -42,6 +51,17 @@ import {
   searchItems,
   updateItemStatus,
 } from "@/mcp/services/items";
+import {
+  detectProtectedDomainsMcp,
+  getProtectedDomainMcp,
+  protectedDomainArtifactsMcp,
+  protectedDomainAuditMcp,
+  protectedDomainChangeGatesMcp,
+  protectedDomainChecklistMcp,
+  protectedDomainRecentChangesMcp,
+  protectedDomainStatusMcp,
+  protectedDomainsMcp,
+} from "@/mcp/services/protected-domains";
 
 function toolResult(data: unknown) {
   return {
@@ -400,6 +420,201 @@ function registerTools(server: McpServer) {
       }
     },
   );
+
+  server.registerTool(
+    "protected_domains",
+    {
+      description:
+        "List Protected Domains — architectural boundaries that require governance before modification.",
+      inputSchema: {
+        projectSlug: z
+          .string()
+          .optional()
+          .describe("Filter by project slug (e.g. studioops)"),
+      },
+    },
+    async (args) => {
+      try {
+        const input = protectedDomainsSchema.parse(args);
+        return toolResult(await protectedDomainsMcp(input));
+      } catch (error) {
+        return toolError(error);
+      }
+    },
+  );
+
+  server.registerTool(
+    "get_protected_domain",
+    {
+      description: "Fetch full Protected Domain detail including artifacts, gates, and extension points.",
+      inputSchema: {
+        slug: z.string().describe("Protected domain slug (e.g. bloom-runtime)"),
+      },
+    },
+    async (args) => {
+      try {
+        const input = getProtectedDomainSchema.parse(args);
+        return toolResult(await getProtectedDomainMcp(input));
+      } catch (error) {
+        return toolError(error);
+      }
+    },
+  );
+
+  server.registerTool(
+    "protected_domain_status",
+    {
+      description:
+        "Return Protected Domain status summary: protection level, owner, versions, gates, and violations.",
+      inputSchema: {
+        slug: z.string().describe("Protected domain slug"),
+      },
+    },
+    async (args) => {
+      try {
+        const input = protectedDomainStatusSchema.parse(args);
+        return toolResult(await protectedDomainStatusMcp(input));
+      } catch (error) {
+        return toolError(error);
+      }
+    },
+  );
+
+  server.registerTool(
+    "protected_domain_artifacts",
+    {
+      description:
+        "List artifacts for a Protected Domain (ADRs, contracts, catalogs, golden masters, inventories, tests).",
+      inputSchema: {
+        slug: z.string().describe("Protected domain slug"),
+      },
+    },
+    async (args) => {
+      try {
+        const input = protectedDomainArtifactsSchema.parse(args);
+        return toolResult(await protectedDomainArtifactsMcp(input));
+      } catch (error) {
+        return toolError(error);
+      }
+    },
+  );
+
+  server.registerTool(
+    "protected_domain_change_gates",
+    {
+      description:
+        "Return mandatory change gates, allowed extension points, and blocked changes for a Protected Domain.",
+      inputSchema: {
+        slug: z.string().describe("Protected domain slug"),
+      },
+    },
+    async (args) => {
+      try {
+        const input = protectedDomainChangeGatesSchema.parse(args);
+        return toolResult(await protectedDomainChangeGatesMcp(input));
+      } catch (error) {
+        return toolError(error);
+      }
+    },
+  );
+
+  server.registerTool(
+    "protected_domain_checklist",
+    {
+      description:
+        "Evaluate change gate checklist for a Protected Domain. Forge must not mark work complete until required gates pass.",
+      inputSchema: {
+        slug: z.string().describe("Protected domain slug"),
+        gateResults: z
+          .record(z.string(), z.boolean())
+          .optional()
+          .describe("Map of gate name to pass/fail status"),
+      },
+    },
+    async (args) => {
+      try {
+        const input = protectedDomainChecklistSchema.parse(args);
+        return toolResult(await protectedDomainChecklistMcp(input));
+      } catch (error) {
+        return toolError(error);
+      }
+    },
+  );
+
+  server.registerTool(
+    "protected_domain_audit",
+    {
+      description: "Record an audit entry for a Protected Domain and update last audit timestamp.",
+      inputSchema: {
+        slug: z.string().describe("Protected domain slug"),
+        note: z.string().describe("Audit note or summary"),
+        auditor: z.string().optional().describe("Auditor name or agent"),
+        passed: z.boolean().optional().describe("Whether audit passed (default true)"),
+      },
+    },
+    async (args) => {
+      try {
+        const input = protectedDomainAuditSchema.parse(args);
+        return toolResult(await protectedDomainAuditMcp(input));
+      } catch (error) {
+        return toolError(error);
+      }
+    },
+  );
+
+  server.registerTool(
+    "protected_domain_recent_changes",
+    {
+      description: "List open and recent changes tracked for a Protected Domain.",
+      inputSchema: {
+        slug: z.string().describe("Protected domain slug"),
+        limit: z
+          .number()
+          .int()
+          .min(1)
+          .max(50)
+          .optional()
+          .describe("Max recent changes (default 10)"),
+      },
+    },
+    async (args) => {
+      try {
+        const input = protectedDomainRecentChangesSchema.parse(args);
+        return toolResult(await protectedDomainRecentChangesMcp(input));
+      } catch (error) {
+        return toolError(error);
+      }
+    },
+  );
+
+  server.registerTool(
+    "detect_protected_domains",
+    {
+      description:
+        "Detect when a task intersects Protected Domains. Returns matched domains, required gates, prohibited work, and a Forge warning block. Call before planning Forge work.",
+      inputSchema: {
+        text: z
+          .string()
+          .describe("Task description, item title, or plan text to analyze"),
+        paths: z
+          .array(z.string())
+          .optional()
+          .describe("File paths being modified"),
+        projectSlug: z
+          .string()
+          .optional()
+          .describe("Project slug for scoping domains"),
+      },
+    },
+    async (args) => {
+      try {
+        const input = detectProtectedDomainsSchema.parse(args);
+        return toolResult(await detectProtectedDomainsMcp(input));
+      } catch (error) {
+        return toolError(error);
+      }
+    },
+  );
 }
 
 async function main() {
@@ -418,7 +633,7 @@ async function main() {
     },
     {
       instructions:
-        "DevAnvil MCP server for intake items, initiatives, portfolio focus, and Forge-ready item ranking. Tools are prefixed devanvil in Cursor (e.g. devanvil.get_ready_items). StudioOps Forge: portfolio_focus → get_ready_items → forge_pick.",
+        "DevAnvil MCP server for intake items, initiatives, portfolio focus, Protected Domains, and Forge-ready item ranking. Tools are prefixed devanvil in Cursor (e.g. devanvil.get_ready_items). StudioOps Forge: portfolio_focus → get_ready_items → forge_pick. Before planning work in a governed subsystem, call devanvil.detect_protected_domains or devanvil.get_protected_domain.",
     },
   );
 

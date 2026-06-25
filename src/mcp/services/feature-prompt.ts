@@ -1,4 +1,8 @@
 import { prisma } from "@/lib/db";
+import {
+  analyzeForgeTask,
+  formatForgeWarning,
+} from "@/lib/protected-domains/detection";
 import { buildSuggestedCommand } from "@/lib/text";
 import { assertFound } from "@/mcp/errors";
 import { getItem } from "@/mcp/services/items";
@@ -28,6 +32,11 @@ function projectInstructions(projectSlug: string): string {
         "5. docs/agent-memory/regression-log.md",
         "6. docs/agent-memory/decisions.md",
         "7. docs/product-roadmap.md (when task touches product scope)",
+        "",
+        "Protected Domains: Before entering a governed subsystem (Bloom Runtime, Auth, Billing, etc.),",
+        "call devanvil.detect_protected_domains with the task text and file paths.",
+        "Load contracts, ADRs, inventories, and golden masters listed in the domain artifacts.",
+        "Do not mark work complete until devanvil.protected_domain_checklist passes all required gates.",
         "",
         "Session state: docs/forge/session.md",
         "Branch naming: forge/dev-<id>-<slug>",
@@ -137,6 +146,22 @@ export async function generateFeaturePrompt(
     "",
     projectInstructions(projectSlug),
   ];
+
+  const taskText = [
+    detail.item.title,
+    detail.rawText,
+    detail.normalizedSummary,
+  ].join("\n");
+
+  const domainWarning = await analyzeForgeTask({
+    text: taskText,
+    projectSlug,
+  });
+
+  const warningBlock = formatForgeWarning(domainWarning);
+  if (warningBlock) {
+    lines.push("", warningBlock);
+  }
 
   if (input.includeContext) {
     if (detail.activity.length > 0) {

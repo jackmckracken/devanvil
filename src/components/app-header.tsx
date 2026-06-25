@@ -6,13 +6,19 @@ export function AppHeader() {
     <header className="border-b border-zinc-200 bg-white">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4">
         <div>
-          <Link href="/focus" className="text-xl font-bold tracking-tight text-zinc-900">
+          <Link href="/workspace" className="text-xl font-bold tracking-tight text-zinc-900">
             Dev<span className="text-orange-600">Anvil</span>
           </Link>
-          <p className="text-sm text-zinc-500">Capture. Classify. Queue. Build.</p>
+          <p className="text-sm text-zinc-500">Architectural Operating System</p>
         </div>
         <div className="flex items-center gap-4">
-          <Link href="/focus" className="text-sm font-medium text-orange-600 hover:text-orange-700">
+          <Link href="/workspace" className="text-sm font-medium text-orange-600 hover:text-orange-700">
+            Workspace
+          </Link>
+          <Link href="/investments" className="text-sm text-emerald-600 hover:text-emerald-700">
+            Investments
+          </Link>
+          <Link href="/focus" className="text-sm text-zinc-600 hover:text-zinc-900">
             Focus
           </Link>
           <Link href="/next" className="text-sm text-zinc-600 hover:text-zinc-900">
@@ -26,6 +32,9 @@ export function AppHeader() {
           </Link>
           <Link href="/curation" className="text-sm text-zinc-600 hover:text-zinc-900">
             Curation
+          </Link>
+          <Link href="/protected-domains" className="text-sm text-zinc-600 hover:text-zinc-900">
+            Domains
           </Link>
           <Link href="/settings" className="text-sm text-zinc-600 hover:text-zinc-900">
             Settings

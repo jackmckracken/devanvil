@@ -247,6 +247,24 @@ Use these in Cursor chat after the MCP server is connected:
 
 > Link branch feature/export-csv on repo levrops to DevAnvil item `<itemId>`
 
+**Check Protected Domains before Forge work:**
+
+> Run devanvil.detect_protected_domains with the task text for studioops before planning. If Bloom Runtime is detected, load artifacts and run devanvil.protected_domain_checklist before marking complete.
+
+### Protected Domain Tools
+
+| Tool | Purpose |
+|------|---------|
+| `devanvil.protected_domains` | List all Protected Domains |
+| `devanvil.get_protected_domain` | Full domain detail (artifacts, gates, extension points) |
+| `devanvil.protected_domain_status` | Status summary (owner, versions, violations) |
+| `devanvil.protected_domain_artifacts` | ADRs, contracts, catalogs, golden masters |
+| `devanvil.protected_domain_change_gates` | Required gates and blocked changes |
+| `devanvil.protected_domain_checklist` | Evaluate gate checklist before marking work complete |
+| `devanvil.protected_domain_audit` | Record an audit entry |
+| `devanvil.protected_domain_recent_changes` | Open and recent changes |
+| `devanvil.detect_protected_domains` | Detect domain intersection from task text + paths |
+
 ## Troubleshooting
 
 | Problem | Fix |

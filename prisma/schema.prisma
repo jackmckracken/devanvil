@@ -97,6 +97,46 @@ enum StrategicValue {
   future_vision
 }
 
+enum WorkflowCommand {
+  architectural_intake
+  change_classify
+  investigate
+  ship
+  investment
+}
+
+enum IntakeStatus {
+  processing
+  complete
+  accepted
+  rejected
+}
+
+enum InvestmentCategory {
+  learning
+  experimentation
+  environment
+  infrastructure
+  relationships
+  business
+  health
+}
+
+enum InvestmentStatus {
+  captured
+  scheduled
+  in_progress
+  completed
+  archived
+}
+
+enum InvestmentLeverage {
+  low
+  medium
+  high
+  compound
+}
+
 model Project {
   id          String        @id @default(cuid())
   name        String
@@ -105,10 +145,99 @@ model Project {
   status      ProjectStatus @default(active)
   createdAt   DateTime      @default(now()) @map("created_at")
   updatedAt   DateTime      @updatedAt @map("updated_at")
-  devItems    DevItem[]
-  initiatives Initiative[]
+  devItems              DevItem[]
+  initiatives           Initiative[]
+  protectedDomains      ProtectedDomain[]
+  architecturalIntakes  ArchitecturalIntake[]
+  investments           Investment[]
 
   @@map("projects")
+}
+
+model ArchitecturalIntake {
+  id              String          @id @default(cuid())
+  projectId       String          @map("project_id")
+  command         WorkflowCommand
+  rawInput        String          @map("raw_input")
+  intent          String?
+  briefMarkdown   String?         @map("brief_markdown")
+  resultJson      Json?           @map("result_json")
+  status          IntakeStatus    @default(complete)
+  acceptedItemIds Json?           @map("accepted_item_ids")
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+
+  project Project @relation(fields: [projectId], references: [id])
+
+  @@index([projectId])
+  @@index([command])
+  @@index([status])
+  @@index([createdAt])
+  @@map("architectural_intakes")
+}
+
+model Investment {
+  id               String             @id @default(cuid())
+  projectId        String             @map("project_id")
+  title            String
+  description      String?
+  rawInput         String?            @map("raw_input")
+  category         InvestmentCategory
+  status           InvestmentStatus   @default(captured)
+  capabilityTarget String?            @map("capability_target")
+  intentConnection String?            @map("intent_connection")
+  leverage         InvestmentLeverage @default(medium)
+  estimatedHours   Float?             @map("estimated_hours")
+  compoundingValue String?            @map("compounding_value")
+  reflection       String?
+  capabilityAdded  String?            @map("capability_added")
+  scheduledFor     DateTime?          @map("scheduled_for")
+  completedAt      DateTime?          @map("completed_at")
+  intakeId         String?            @map("intake_id")
+  createdAt        DateTime           @default(now()) @map("created_at")
+  updatedAt        DateTime           @updatedAt @map("updated_at")
+
+  project         Project                @relation(fields: [projectId], references: [id])
+  initiativeLinks InitiativeInvestment[]
+  workItemLinks   InvestmentWorkItem[]
+
+  @@index([projectId])
+  @@index([category])
+  @@index([status])
+  @@index([createdAt])
+  @@map("investments")
+}
+
+model InitiativeInvestment {
+  id           String   @id @default(cuid())
+  initiativeId String   @map("initiative_id")
+  investmentId String   @map("investment_id")
+  recommended  Boolean  @default(false)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  initiative Initiative @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  investment Investment @relation(fields: [investmentId], references: [id], onDelete: Cascade)
+
+  @@unique([initiativeId, investmentId])
+  @@index([initiativeId])
+  @@index([investmentId])
+  @@map("initiative_investments")
+}
+
+model InvestmentWorkItem {
+  id           String   @id @default(cuid())
+  investmentId String   @map("investment_id")
+  devItemId    String   @map("dev_item_id")
+  relationship String   @default("enables")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  investment Investment @relation(fields: [investmentId], references: [id], onDelete: Cascade)
+  devItem    DevItem    @relation(fields: [devItemId], references: [id], onDelete: Cascade)
+
+  @@unique([investmentId, devItemId])
+  @@index([investmentId])
+  @@index([devItemId])
+  @@map("investment_work_items")
 }
 
 model DevItem {
@@ -143,7 +272,9 @@ model DevItem {
   artifacts       DevArtifact[]
   activity        DevActivity[]
   builds          DevBuild[]
-  initiativeItems InitiativeItem[]
+  initiativeItems       InitiativeItem[]
+  protectedDomainChanges ProtectedDomainChange[]
+  investmentLinks       InvestmentWorkItem[]
 
   @@index([projectId])
   @@index([status])
@@ -231,6 +362,7 @@ model Initiative {
 
   project Project          @relation(fields: [projectId], references: [id])
   items   InitiativeItem[]
+  investmentLinks InitiativeInvestment[]
 
   @@index([projectId])
   @@index([status])
@@ -265,4 +397,181 @@ model IngestKey {
 
   @@index([keyPrefix])
   @@map("ingest_keys")
+}
+
+enum ProtectionLevel {
+  advisory
+  guarded
+  protected
+  locked
+}
+
+enum ProtectedDomainStatus {
+  active
+  archived
+}
+
+enum DomainArtifactKind {
+  adr
+  runtime_contract
+  visual_contract
+  catalog
+  golden_master
+  runtime_inventory
+  test_suite
+  regression_log
+  decision_record
+}
+
+enum ExtensionPointCategory {
+  allowed
+  requires_adr
+}
+
+enum DomainChangeStatus {
+  open
+  in_review
+  merged
+  blocked
+}
+
+enum DomainViolationSeverity {
+  low
+  medium
+  high
+  critical
+}
+
+enum RegressionStatus {
+  passing
+  failing
+  unknown
+  not_run
+}
+
+model ProtectedDomain {
+  id                  String                @id @default(cuid())
+  slug                String                @unique
+  name                String
+  description         String?
+  owner               String
+  status              ProtectedDomainStatus @default(active)
+  protectionLevel     ProtectionLevel       @default(advisory) @map("protection_level")
+  projectId           String?               @map("project_id")
+  keywords            Json                  @default("[]")
+  pathPatterns        Json                  @default("[]") @map("path_patterns")
+  lastAuditAt         DateTime?             @map("last_audit_at")
+  lastGoldenMasterAt  DateTime?             @map("last_golden_master_at")
+  contractVersion     String?               @map("contract_version")
+  inventoryVersion    String?               @map("inventory_version")
+  regressionStatus    RegressionStatus      @default(unknown) @map("regression_status")
+  createdAt           DateTime              @default(now()) @map("created_at")
+  updatedAt           DateTime              @updatedAt @map("updated_at")
+
+  project        Project?                     @relation(fields: [projectId], references: [id])
+  artifacts      ProtectedDomainArtifact[]
+  changeGates    ProtectedDomainChangeGate[]
+  extensionPoints ProtectedDomainExtensionPoint[]
+  changes        ProtectedDomainChange[]
+  violations     ProtectedDomainViolation[]
+  audits         ProtectedDomainAudit[]
+
+  @@index([projectId])
+  @@index([protectionLevel])
+  @@index([status])
+  @@map("protected_domains")
+}
+
+model ProtectedDomainArtifact {
+  id           String             @id @default(cuid())
+  domainId     String             @map("domain_id")
+  kind         DomainArtifactKind
+  title        String
+  path         String?
+  version      String?
+  metadataJson Json?              @map("metadata_json")
+  createdAt    DateTime           @default(now()) @map("created_at")
+  updatedAt    DateTime           @updatedAt @map("updated_at")
+
+  domain ProtectedDomain @relation(fields: [domainId], references: [id], onDelete: Cascade)
+
+  @@index([domainId])
+  @@index([kind])
+  @@map("protected_domain_artifacts")
+}
+
+model ProtectedDomainChangeGate {
+  id          String  @id @default(cuid())
+  domainId    String  @map("domain_id")
+  name        String
+  description String?
+  required    Boolean @default(true)
+  sortOrder   Int     @default(0) @map("sort_order")
+
+  domain ProtectedDomain @relation(fields: [domainId], references: [id], onDelete: Cascade)
+
+  @@index([domainId])
+  @@map("protected_domain_change_gates")
+}
+
+model ProtectedDomainExtensionPoint {
+  id          String                 @id @default(cuid())
+  domainId    String                 @map("domain_id")
+  name        String
+  description String?
+  category    ExtensionPointCategory
+
+  domain ProtectedDomain @relation(fields: [domainId], references: [id], onDelete: Cascade)
+
+  @@index([domainId])
+  @@map("protected_domain_extension_points")
+}
+
+model ProtectedDomainChange {
+  id          String             @id @default(cuid())
+  domainId    String             @map("domain_id")
+  devItemId   String?            @map("dev_item_id")
+  title       String
+  description String?
+  risk        String?
+  status      DomainChangeStatus @default(open)
+  gatesJson   Json?              @map("gates_json")
+  createdAt   DateTime           @default(now()) @map("created_at")
+  updatedAt   DateTime           @updatedAt @map("updated_at")
+
+  domain  ProtectedDomain @relation(fields: [domainId], references: [id], onDelete: Cascade)
+  devItem DevItem?        @relation(fields: [devItemId], references: [id], onDelete: SetNull)
+
+  @@index([domainId])
+  @@index([devItemId])
+  @@index([status])
+  @@map("protected_domain_changes")
+}
+
+model ProtectedDomainViolation {
+  id          String                  @id @default(cuid())
+  domainId    String                  @map("domain_id")
+  description String
+  severity    DomainViolationSeverity @default(medium)
+  resolvedAt  DateTime?               @map("resolved_at")
+  createdAt   DateTime                @default(now()) @map("created_at")
+
+  domain ProtectedDomain @relation(fields: [domainId], references: [id], onDelete: Cascade)
+
+  @@index([domainId])
+  @@map("protected_domain_violations")
+}
+
+model ProtectedDomainAudit {
+  id        String   @id @default(cuid())
+  domainId  String   @map("domain_id")
+  note      String
+  auditor   String?
+  passed    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  domain ProtectedDomain @relation(fields: [domainId], references: [id], onDelete: Cascade)
+
+  @@index([domainId])
+  @@map("protected_domain_audits")
 }

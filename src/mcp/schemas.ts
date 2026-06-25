@@ -134,3 +134,53 @@ export const linkItemToInitiativeSchema = z.object({
 export const portfolioFocusSchema = z.object({
   projectSlug: z.string().min(1, "projectSlug is required"),
 });
+
+export const PROTECTION_LEVELS = [
+  "advisory",
+  "guarded",
+  "protected",
+  "locked",
+] as const;
+
+export const protectedDomainsSchema = z.object({
+  projectSlug: z.string().optional(),
+});
+
+export const getProtectedDomainSchema = z.object({
+  slug: z.string().min(1, "slug is required"),
+});
+
+export const protectedDomainStatusSchema = z.object({
+  slug: z.string().min(1, "slug is required"),
+});
+
+export const protectedDomainArtifactsSchema = z.object({
+  slug: z.string().min(1, "slug is required"),
+});
+
+export const protectedDomainChangeGatesSchema = z.object({
+  slug: z.string().min(1, "slug is required"),
+});
+
+export const protectedDomainChecklistSchema = z.object({
+  slug: z.string().min(1, "slug is required"),
+  gateResults: z.record(z.string(), z.boolean()).optional(),
+});
+
+export const protectedDomainAuditSchema = z.object({
+  slug: z.string().min(1, "slug is required"),
+  note: z.string().min(1, "note is required"),
+  auditor: z.string().optional(),
+  passed: z.boolean().optional().default(true),
+});
+
+export const protectedDomainRecentChangesSchema = z.object({
+  slug: z.string().min(1, "slug is required"),
+  limit: z.number().int().min(1).max(50).optional().default(10),
+});
+
+export const detectProtectedDomainsSchema = z.object({
+  text: z.string().min(1, "text is required"),
+  paths: z.array(z.string()).optional(),
+  projectSlug: z.string().optional(),
+});
