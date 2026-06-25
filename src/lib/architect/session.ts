@@ -6,6 +6,8 @@ import {
   runArchitectAnalysis,
 } from "@/lib/architect/analyze";
 import { normalizeArchitectAnalysis } from "@/lib/architect/normalize";
+import { hydrateMentalModel } from "@/lib/architect/mental-model-server";
+import { pressuresToObservations } from "@/lib/architect/pressure";
 import type {
   ArchitectAnalysis,
   ArchitectMessage,
@@ -21,7 +23,7 @@ function parseMessages(json: unknown): ArchitectMessage[] {
   return json as ArchitectMessage[];
 }
 
-function toView(
+async function toView(
   session: {
     id: string;
     captureId: string | null;
@@ -34,12 +36,26 @@ function toView(
     updatedAt: Date;
     project: { slug: string };
   },
-): ArchitectSessionView {
+): Promise<ArchitectSessionView> {
   const rawAnalysis = session.analysisJson as Record<string, unknown> | null;
   const messageCount = parseMessages(session.messagesJson).filter((m) => m.role === "user").length;
-  const analysis = rawAnalysis
+  let analysis = rawAnalysis
     ? normalizeArchitectAnalysis(rawAnalysis, messageCount)
     : null;
+
+  if (analysis?.mentalModel) {
+    const mentalModel = await hydrateMentalModel(
+      analysis.mentalModel,
+      session.project.slug,
+      messageCount,
+    );
+    analysis = {
+      ...analysis,
+      mentalModel,
+      remainingUnknowns: pressuresToObservations(mentalModel.pressures),
+      architecturalQuestions: [],
+    };
+  }
 
   return {
     id: session.id,
@@ -92,7 +108,7 @@ async function createArchitectSession(
     include: { project: { select: { slug: true } } },
   });
 
-  return toView(session);
+  return await toView(session);
 }
 
 export async function startArchitectSessionFromCapture(
@@ -173,7 +189,7 @@ export async function continueArchitectSession(
     include: { project: { select: { slug: true } } },
   });
 
-  return toView(updated);
+  return await toView(updated);
 }
 
 export async function getArchitectSession(sessionId: string): Promise<ArchitectSessionView | null> {
@@ -182,7 +198,7 @@ export async function getArchitectSession(sessionId: string): Promise<ArchitectS
     include: { project: { select: { slug: true } } },
   });
   if (!session) return null;
-  return toView(session);
+  return await toView(session);
 }
 
 export async function createInitiativeFromSession(sessionId: string) {

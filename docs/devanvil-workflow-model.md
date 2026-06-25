@@ -316,6 +316,10 @@ Capture is not a fifth mode. Capture is the **universal prefix**.
 
 "I want to **understand** what this captured idea means."
 
+Architect does not ask *"What should the model be?"* It asks *"What is reality trying to become?"*
+
+The Mental Model is the primary artifact. **Architectural Pressure** replaces premature taxonomy questions — each node shows evidence-driven pressure (stable / observe / prepare / split), not speculative splits like "Should Capability divide into Technical / Creative / Production?" See [Cognitive Interface — Architectural Pressure](./devanvil-cognitive-interface.md#architectural-pressure).
+
 ### When to use
 
 - After capture, during planning
@@ -354,7 +358,7 @@ Architect **reads**:
 └──────┬──────┘
        ▼
 ┌─────────────┐
-│ Converse    │  Clarifying questions
+│ Converse    │  Refine mental model — never invent ontology without evidence
 └──────┬──────┘
        ▼
 ┌─────────────┐
@@ -363,7 +367,7 @@ Architect **reads**:
 └──────┬──────┘
        ▼
 ┌─────────────┐
-│ Propose     │  Initiative, epics, questions, non-goals
+│ Propose     │  Initiative, epics, pressure signals, non-goals
 └──────┬──────┘
        ▼
 Terminal: Create Initiative | Continue Architecting | Discard

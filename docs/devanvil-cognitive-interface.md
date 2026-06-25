@@ -204,9 +204,31 @@ A Mental Model makes architecture visible through:
 - **Assumptions** — locked (✓) vs open (?)
 - **Competing options** — architectures compared, not argued in prose
 - **Changes** — visible evolution each turn (new node, boundary moved, split)
-- **Open questions** — only unresolved architectural unknowns
+- **Architectural pressure** — evidence-driven signals per node (stable / observe / prepare / split)
+- **Not taxonomy questions** — never "Should X split into Y?" without earned evidence
 
 Confidence attaches to **beliefs** (nodes and relationships), not to the session.
+
+---
+
+## Architectural Pressure
+
+Architect does not ask *"What should the model be?"*
+
+It asks *"What is reality trying to become?"*
+
+Every node can carry **pressure** — a measurable signal that reality may require ontology evolution:
+
+| Recommendation | Meaning |
+|----------------|---------|
+| **Stable** | Keep current model |
+| **Observe** | Pattern emerging — collect more evidence |
+| **Prepare** | Likely future specialization |
+| **Split** | Reality now justifies architectural evolution |
+
+Pressure accumulates from completed work, investments, captures, regressions, and repeated patterns — **never** because the user suggested a taxonomy.
+
+The best architectures are discovered, not invented. Premature specialization is a smell. Late specialization means the ontology is listening.
 
 ---
 

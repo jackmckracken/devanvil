@@ -3,8 +3,10 @@ import { detectProtectedDomains } from "@/lib/protected-domains/detection";
 import { listProtectedDomains } from "@/lib/protected-domains/queries";
 import { searchArchitecturalMemory } from "@/lib/workflow/memory";
 import type { SuggestedInitiative } from "@/lib/workflow/types";
+import { gatherArchitectEvidence, type ArchitectEvidence } from "@/lib/architect/evidence";
 
 export type ArchitectContext = {
+  evidence: ArchitectEvidence;
   memory: Awaited<ReturnType<typeof searchArchitecturalMemory>>;
   protectedDomains: Awaited<ReturnType<typeof detectProtectedDomains>>;
   relatedInitiatives: SuggestedInitiative[];
@@ -15,7 +17,8 @@ export async function gatherArchitectContext(
   text: string,
   projectSlug: string,
 ): Promise<ArchitectContext> {
-  const [memory, protectedDomains, initiatives, domainList] = await Promise.all([
+  const [evidence, memory, protectedDomains, initiatives, domainList] = await Promise.all([
+    gatherArchitectEvidence(projectSlug),
     searchArchitecturalMemory(text, projectSlug, 10),
     detectProtectedDomains({ text, projectSlug }),
     findRelatedInitiatives(text, projectSlug),
@@ -45,7 +48,7 @@ export async function gatherArchitectContext(
     }
   }
 
-  return { memory, protectedDomains, relatedInitiatives: initiatives, records };
+  return { evidence, memory, protectedDomains, relatedInitiatives: initiatives, records };
 }
 
 async function findRelatedInitiatives(

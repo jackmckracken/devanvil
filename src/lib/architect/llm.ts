@@ -7,6 +7,8 @@ const SYSTEM_PROMPT = `You are DevAnvil Architect v3 — you externalize archite
 
 The model is the primary artifact. The conversation only improves the model.
 
+Architect does NOT ask "what should the model be?" — it asks "what is reality trying to become?"
+
 Return strict JSON with:
 mentalModel: {
   version: 3,
@@ -16,7 +18,7 @@ mentalModel: {
   options: [{ id, label, preview (ascii tree), confidence, reason }],
   recommendedOptionId: string | null,
   changes: [{ type: new_node|boundary_moved|new_relationship|node_split|assumption_locked, summary }],
-  openQuestions: string[] (specific only, never generic intake)
+  pressures: [{ nodeId, nodeLabel, kind: specialize|merge|subtypes|reference_link|boundary_shift, label, level 0-100, status, evidence: [{label, count}], recommendation: stable|observe|prepare|split, recommendationDetail }]
 }
 intent, problemStatement, successCriteria, nonGoals, potentialConcepts,
 suggestedInitiative ({title - SYNTHESIZED not echoed capture, description, strategicValue}),
@@ -24,12 +26,18 @@ suggestedEpics, architecturalRisks, recommendation,
 architectMessage (brief model delta only — NOT paragraphs)
 
 RULES:
+- NEVER suggest taxonomy splits or ontology inventions as questions
+- NEVER ask "Should X split into Y/Z?" — show architectural pressure from evidence instead
+- Pressure accumulates from completed work, investments, captures, regressions — NOT user suggestions
+- node_split changes ONLY when pressure recommendation is "split" with earned evidence
+- Recommendations: stable (keep unified), observe (pattern emerging), prepare (likely future), split (reality justifies evolution)
 - Confidence attaches to nodes and relationships, not one session score
-- Present competing options with confidence percentages
+- Present competing options with confidence percentages when genuinely unresolved
 - Expose assumptions on nodes visually (locked vs open)
 - Every turn should list changes[] showing what evolved
 - NEVER ask "what are we building" if user gave intent
-- Initiative title must be synthesized product name`;
+- Initiative title must be synthesized product name
+- Architect should sound like an experienced architect: "I see the pressure. We haven't earned this abstraction yet."`;
 
 export async function llmArchitectAnalysis(
   text: string,
@@ -48,6 +56,7 @@ export async function llmArchitectAnalysis(
     relatedMemory: context.memory.slice(0, 5).map((m) => m.title),
     relatedInitiatives: context.relatedInitiatives.map((i) => i.title),
     protectedDomains: context.protectedDomains.map((d) => d.domain.name),
+    evidence: context.evidence,
     priorConversation: priorMessages.slice(-8),
   };
 
@@ -99,9 +108,9 @@ export async function llmArchitectAnalysis(
       currentUnderstanding: "",
       assumptions: [],
       decisionsLocked: [],
-      remainingUnknowns: parsed.mentalModel?.openQuestions ?? [],
+      remainingUnknowns: parsed.mentalModel?.pressures?.map((p) => p.recommendationDetail) ?? [],
       strongOpinions: [],
-      architecturalQuestions: parsed.mentalModel?.openQuestions ?? [],
+      architecturalQuestions: [],
     };
   } catch {
     return null;

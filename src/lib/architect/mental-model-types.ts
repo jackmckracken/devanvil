@@ -1,5 +1,32 @@
 import type { ArchitectAssumption } from "@/lib/architect/types";
 
+export type PressureKind =
+  | "specialize"
+  | "merge"
+  | "subtypes"
+  | "reference_link"
+  | "boundary_shift";
+
+export type PressureRecommendation = "stable" | "observe" | "prepare" | "split";
+
+export type PressureEvidence = {
+  label: string;
+  count: number;
+};
+
+/** Evidence-driven signal that reality may require ontology evolution */
+export type ArchitecturalPressure = {
+  nodeId: string;
+  nodeLabel: string;
+  kind: PressureKind;
+  label: string;
+  level: number;
+  status: PressureRecommendation | "stable";
+  evidence: PressureEvidence[];
+  recommendation: PressureRecommendation;
+  recommendationDetail: string;
+};
+
 export type ModelNodeKind =
   | "root"
   | "domain"
@@ -58,5 +85,7 @@ export type ArchitectMentalModel = {
   options: ModelOption[];
   recommendedOptionId: string | null;
   changes: ModelChange[];
-  openQuestions: string[];
+  /** @deprecated Use pressures — taxonomy questions violate Reality Over Assumption */
+  openQuestions?: string[];
+  pressures: ArchitecturalPressure[];
 };

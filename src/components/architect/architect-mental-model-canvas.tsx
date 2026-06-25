@@ -1,4 +1,8 @@
-import type { ArchitectMentalModel, ModelNode } from "@/lib/architect/mental-model-types";
+import type {
+  ArchitectMentalModel,
+  ArchitecturalPressure,
+  ModelNode,
+} from "@/lib/architect/mental-model-types";
 
 function confidenceTone(value: number): string {
   if (value >= 80) return "text-emerald-600 bg-emerald-50";
@@ -15,6 +19,7 @@ function nodeBorder(state: ModelNode["state"]): string {
 
 export function ArchitectMentalModelCanvas({ model }: { model: ArchitectMentalModel }) {
   const root = model.nodes.find((n) => n.id === model.rootId);
+  const pressures = model.pressures ?? [];
 
   return (
     <div className="space-y-6">
@@ -147,21 +152,20 @@ export function ArchitectMentalModelCanvas({ model }: { model: ArchitectMentalMo
         </ul>
       </section>
 
-      {model.openQuestions.length > 0 && (
+      {pressures.length > 0 && (
         <section>
           <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
-            Open Questions
+            Architectural Pressure
           </h3>
-          <ol className="mt-2 list-decimal space-y-1.5 pl-5">
-            {model.openQuestions.map((q) => (
-              <li
-                key={q}
-                className="text-sm text-amber-900 animate-pulse [animation-duration:3s]"
-              >
-                {q}
-              </li>
+          <p className="mt-1 text-xs text-zinc-500">
+            Pressure accumulates from evidence — not discussion. Architect asks what reality is
+            trying to become.
+          </p>
+          <div className="mt-3 space-y-4">
+            {pressures.map((pressure) => (
+              <PressureCard key={`${pressure.nodeId}-${pressure.kind}`} pressure={pressure} />
             ))}
-          </ol>
+          </div>
         </section>
       )}
     </div>
@@ -241,5 +245,64 @@ function ChangeBadge({ type }: { type: string }) {
     <span className="shrink-0 rounded bg-violet-200 px-1.5 py-0.5 text-[10px] font-bold text-violet-800">
       {labels[type] ?? type}
     </span>
+  );
+}
+
+function PressureCard({ pressure }: { pressure: ArchitecturalPressure }) {
+  const filled = Math.round(pressure.level / 10);
+  const bar = "█".repeat(filled) + "░".repeat(10 - filled);
+  const recTone =
+    pressure.recommendation === "stable"
+      ? "text-emerald-700"
+      : pressure.recommendation === "observe"
+        ? "text-amber-700"
+        : pressure.recommendation === "prepare"
+          ? "text-orange-700"
+          : "text-violet-700";
+
+  return (
+    <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <p className="text-sm font-semibold text-zinc-900">{pressure.nodeLabel}</p>
+          <p className="text-xs text-zinc-500 capitalize">
+            Status: {pressure.status}
+          </p>
+        </div>
+        <ConfidencePill value={pressure.level} />
+      </div>
+
+      <div className="mt-3">
+        <p className="text-xs font-medium uppercase tracking-wide text-zinc-400">
+          {pressure.label}
+        </p>
+        <p className="mt-1 font-mono text-sm text-zinc-700">
+          {bar}{" "}
+          <span className="tabular-nums text-zinc-500">{pressure.level}%</span>
+        </p>
+      </div>
+
+      <div className="mt-3">
+        <p className="text-xs font-medium uppercase tracking-wide text-zinc-400">Evidence</p>
+        <ul className="mt-1.5 grid gap-1 sm:grid-cols-2">
+          {pressure.evidence.map((row) => (
+            <li
+              key={row.label}
+              className="flex justify-between rounded-md bg-zinc-50 px-2 py-1 text-xs text-zinc-700"
+            >
+              <span>{row.label}</span>
+              <span className="font-semibold tabular-nums">{row.count}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <div className="mt-3 rounded-lg border border-zinc-100 bg-zinc-50/80 px-3 py-2">
+        <p className="text-xs font-medium uppercase tracking-wide text-zinc-400">
+          Recommendation
+        </p>
+        <p className={`mt-1 text-sm ${recTone}`}>{pressure.recommendationDetail}</p>
+      </div>
+    </div>
   );
 }

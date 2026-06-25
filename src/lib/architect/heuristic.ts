@@ -61,10 +61,9 @@ This is a distinct domain, not an extension of Practice and not a work-item back
   ];
 
   const remainingUnknowns = [
-    "Should Investments generate Practice sessions, or stay architecturally separate?",
-    "How should capability growth be weighted in Momentum vs shipped work?",
-    "How does an artist mark an Investment complete — reflection only, or measurable outcome?",
-    "Is Creative Investments a Capability, a Domain, or a first-class ontology root?",
+    "Capability: unified model is appropriate until completed investment evidence accumulates.",
+    "Momentum integration should follow evidence from completed investments — not speculation.",
+    "Creative Investments boundary is emerging; Practice separation needs sustained evidence.",
   ];
 
   const strongOpinions = [
@@ -402,31 +401,33 @@ function deriveRemainingUnknowns(
   isNewDomain: boolean,
   isFeature: boolean,
 ): string[] {
-  const questions: string[] = [];
+  const observations: string[] = [];
 
   if (isNewDomain) {
-    questions.push("Is this a new root object, a Capability, or a Domain in the ontology?");
-    questions.push("What existing concept does this extend or replace?");
+    observations.push(
+      "Ontology placement should emerge from evidence — not be invented in conversation.",
+    );
   }
 
   if (domains.includes("Practice Coach")) {
-    questions.push("Why isn't Practice sufficient for this need?");
+    observations.push(
+      "Practice boundary pressure will rise only if repeated evidence shows overlap.",
+    );
   }
 
   if (/\bmomentum\b/i.test(text)) {
-    questions.push("Does Momentum consume or reflect this change — and how?");
+    observations.push(
+      "Momentum linkage pressure depends on completed work and investment evidence.",
+    );
   }
 
-  if (/\bhover\b/i.test(text)) {
-    questions.push("Which interaction states are in scope — hover only, or full state machine?");
+  if (isFeature && observations.length < 2) {
+    observations.push(
+      "Ship the smallest slice first — let evidence validate domain ownership.",
+    );
   }
 
-  if (isFeature && questions.length < 2) {
-    questions.push("What is the smallest shippable slice that proves the intent?");
-    questions.push("Which protected-domain evidence is required before ship?");
-  }
-
-  return questions.slice(0, 5);
+  return observations.slice(0, 4);
 }
 
 function deriveStrongOpinions(

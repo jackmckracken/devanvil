@@ -1,5 +1,5 @@
 import type { ArchitectAnalysis, ArchitectAssumption } from "@/lib/architect/types";
-import { mentalModelFromLegacyAnalysis } from "@/lib/architect/mental-model";
+import { mentalModelFromLegacyAnalysis, normalizeMentalModel } from "@/lib/architect/mental-model";
 
 /** Upgrade legacy persisted analysis to v2 shape for UI + chat. */
 export function normalizeArchitectAnalysis(
@@ -52,8 +52,9 @@ export function normalizeArchitectAnalysis(
     analysis.architectMessage ??
     buildBeliefMessage(currentUnderstanding, confidence, remainingUnknowns);
 
-  const mentalModel =
-    analysis.mentalModel ?? mentalModelFromLegacyAnalysis(analysis, priorMessageCount);
+  const mentalModel = normalizeMentalModel(
+    analysis.mentalModel ?? mentalModelFromLegacyAnalysis(analysis, priorMessageCount),
+  );
 
   return {
     mentalModel,

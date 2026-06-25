@@ -67,13 +67,13 @@ export function ArchitectDesignReview({ analysis }: { analysis: ArchitectAnalysi
       {analysis.remainingUnknowns.length > 0 && (
         <section>
           <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
-            Open Questions
+            Architectural Observations
           </h3>
-          <ol className="mt-2 list-decimal space-y-1.5 pl-5 text-sm text-zinc-700">
+          <ul className="mt-2 list-disc space-y-1.5 pl-5 text-sm text-zinc-700">
             {analysis.remainingUnknowns.map((q) => (
               <li key={q}>{q}</li>
             ))}
-          </ol>
+          </ul>
         </section>
       )}
 

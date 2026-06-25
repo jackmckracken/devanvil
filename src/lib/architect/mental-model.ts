@@ -1,4 +1,12 @@
 import type { ArchitectContext } from "@/lib/architect/context";
+import type { ArchitectEvidence } from "@/lib/architect/evidence-types";
+import {
+  computeNodePressures,
+  demoEvidenceForExchange,
+  mergeEvidence,
+  pressuresToObservations,
+  recommendationFromLevel,
+} from "@/lib/architect/pressure";
 import type { ArchitectAnalysis } from "@/lib/architect/types";
 import type {
   ArchitectMentalModel,
@@ -6,6 +14,21 @@ import type {
   ModelNode,
   ModelRelationship,
 } from "@/lib/architect/mental-model-types";
+
+export function normalizeMentalModel(
+  model: Partial<ArchitectMentalModel> | null | undefined,
+): ArchitectMentalModel {
+  return {
+    version: 3,
+    rootId: model?.rootId ?? "root",
+    nodes: model?.nodes ?? [],
+    relationships: model?.relationships ?? [],
+    options: model?.options ?? [],
+    recommendedOptionId: model?.recommendedOptionId ?? null,
+    changes: model?.changes ?? [],
+    pressures: Array.isArray(model?.pressures) ? model.pressures : [],
+  };
+}
 
 function nid(label: string): string {
   return label.toLowerCase().replace(/[^a-z0-9]+/g, "_");
@@ -36,7 +59,10 @@ function rel(fromLabel: string, toLabel: string, label: string, confidence: numb
   };
 }
 
-export function buildCreativeInvestmentsModel(exchangeCount: number): ArchitectMentalModel {
+export function buildCreativeInvestmentsModel(
+  exchangeCount: number,
+  evidence: ArchitectEvidence,
+): ArchitectMentalModel {
   const root = node("Artist", { kind: "root", parentId: null, confidence: 95, state: "existing" });
 
   if (exchangeCount === 0) {
@@ -68,7 +94,17 @@ export function buildCreativeInvestmentsModel(exchangeCount: number): ArchitectM
           { text: "Not inside Practice", status: "open" },
         ],
       }),
+      node("Capability", {
+        kind: "capability",
+        parentId: root.id,
+        confidence: 43,
+        state: "uncertain",
+      }),
     ];
+
+    const pressures = computeNodePressures(nodes, evidence, {
+      practiceBoundaryLocked: false,
+    });
 
     return {
       version: 3,
@@ -98,11 +134,7 @@ export function buildCreativeInvestmentsModel(exchangeCount: number): ArchitectM
       ],
       recommendedOptionId: "opt_b",
       changes: [{ type: "new_node", summary: "Creative Investments" }],
-      openQuestions: [
-        "Does Momentum consume completed Investments?",
-        "How is an Investment marked complete?",
-        "Is Capability one object or split by type?",
-      ],
+      pressures,
     };
   }
 
@@ -143,15 +175,36 @@ export function buildCreativeInvestmentsModel(exchangeCount: number): ArchitectM
 
   const changes: ModelChange[] = [
     { type: "boundary_moved", summary: "Practice — now owns repetition only" },
-    { type: "new_relationship", summary: "Momentum → rewards completed investments" },
   ];
 
-  if (exchangeCount > 2) {
+  if (exchangeCount > 1) {
     changes.push({
-      type: "node_split",
-      summary: "Capability → Technical / Creative / Production",
+      type: "new_relationship",
+      summary: "Momentum → rewards completed investments",
     });
   }
+
+  const momentumLinked = exchangeCount > 1;
+  const capabilityPressure = computeNodePressures(
+    nodes,
+    evidence,
+    { momentumLinked, practiceBoundaryLocked: true },
+  ).find((p) => p.nodeLabel === "Capability");
+
+  if (
+    capabilityPressure &&
+    recommendationFromLevel(capabilityPressure.level) === "split"
+  ) {
+    changes.push({
+      type: "node_split",
+      summary: "Capability families — earned by completed investment evidence",
+    });
+  }
+
+  const pressures = computeNodePressures(nodes, evidence, {
+    momentumLinked,
+    practiceBoundaryLocked: true,
+  });
 
   return {
     version: 3,
@@ -160,7 +213,7 @@ export function buildCreativeInvestmentsModel(exchangeCount: number): ArchitectM
     relationships: [
       rel("Practice", "musicianship", "improves", 88),
       rel("Creative Investments", "capability", "expands", 94),
-      rel("Capability", "creative potential", "increases", exchangeCount > 2 ? 68 : 43),
+      rel("Capability", "creative potential", "increases", capabilityPressure?.level ?? 43),
       rel("Creative Projects", "capability", "consumes", 72),
       rel("Momentum", "completed investments", "rewards", exchangeCount > 1 ? 78 : 54),
     ],
@@ -182,13 +235,7 @@ export function buildCreativeInvestmentsModel(exchangeCount: number): ArchitectM
     ],
     recommendedOptionId: "opt_b",
     changes,
-    openQuestions:
-      exchangeCount > 1
-        ? ["Should Capability split into Technical / Creative / Production?"]
-        : [
-            "Does Momentum consume completed Investments?",
-            "Should Capability split into types?",
-          ],
+    pressures,
   };
 }
 
@@ -241,6 +288,10 @@ export function buildGenericMentalModel(
     );
   }
 
+  const pressures = computeNodePressures(nodes, context.evidence, {
+    momentumLinked: false,
+  });
+
   return {
     version: 3,
     rootId: root.id,
@@ -269,10 +320,7 @@ export function buildGenericMentalModel(
       : [],
     recommendedOptionId: proposed ? "opt_standalone" : null,
     changes: proposed ? [{ type: "new_node", summary: focal }] : [],
-    openQuestions: [
-      "Which existing domain owns this change?",
-      "What evidence gates apply before ship?",
-    ],
+    pressures,
   };
 }
 
@@ -280,6 +328,7 @@ export function evolveMentalModel(
   prior: ArchitectMentalModel,
   userReply: string,
   exchangeCount: number,
+  evidence: ArchitectEvidence,
 ): ArchitectMentalModel {
   const lower = userReply.toLowerCase();
   const model = structuredClone(prior);
@@ -297,7 +346,7 @@ export function evolveMentalModel(
       type: "new_relationship",
       summary: "Momentum rewards completed investments",
     });
-    model.openQuestions = model.openQuestions.filter((q) => !/momentum/i.test(q));
+    model.pressures = (model.pressures ?? []).filter((p) => p.nodeLabel !== "Momentum");
   }
 
   if (/\bpractice\b/i.test(lower) && /\b(separate|outside|not inside)\b/i.test(lower)) {
@@ -314,17 +363,13 @@ export function evolveMentalModel(
       ci.confidence = Math.min(96, ci.confidence + 4);
     }
     changes.push({ type: "boundary_moved", summary: "Practice — repetition only" });
-    model.openQuestions = model.openQuestions.filter((q) => !/practice/i.test(q));
+    model.pressures = (model.pressures ?? []).filter((p) => p.nodeLabel !== "Practice");
   }
 
-  if (/\bcapabilit/i.test(lower) && /\b(split|types|three)\b/i.test(lower)) {
-    changes.push({
-      type: "node_split",
-      summary: "Capability → Technical / Creative / Production",
-    });
+  // User suggestions alone do not earn ontology splits — only evidence does.
+  if (/\b(completed|shipped|finished)\b/i.test(lower) && /\binvestment/i.test(lower)) {
     const cap = model.nodes.find((n) => n.label === "Capability");
-    if (cap) cap.confidence = Math.min(96, cap.confidence + 25);
-    model.openQuestions = model.openQuestions.filter((q) => !/capabilit/i.test(q));
+    if (cap) cap.confidence = Math.min(96, cap.confidence + 4);
   }
 
   if (changes.length > 0) {
@@ -332,8 +377,13 @@ export function evolveMentalModel(
   }
 
   if (exchangeCount >= 2 && model.nodes.some((n) => n.label === "Creative Investments")) {
-    return buildCreativeInvestmentsModel(exchangeCount);
+    return buildCreativeInvestmentsModel(exchangeCount, evidence);
   }
+
+  model.pressures = computeNodePressures(model.nodes, evidence, {
+    momentumLinked: model.nodes.some((n) => n.label === "Momentum" && n.state === "locked"),
+    practiceBoundaryLocked: model.nodes.some((n) => n.label === "Practice" && n.state === "locked"),
+  });
 
   return model;
 }
@@ -355,13 +405,14 @@ export function buildModelDeltaMessage(model: ArchitectMentalModel): string {
     parts.push(model.changes.map((c) => c.summary).join(" · "));
   }
 
-  const uncertain = [
-    ...model.nodes.filter((n) => n.confidence < 60).map((n) => `${n.label} ${n.confidence}%`),
-    ...model.relationships.filter((r) => r.confidence < 60).map((r) => `${r.label} ${r.confidence}%`),
-  ];
-
-  if (uncertain.length > 0) {
-    parts.push(`Still uncertain: ${uncertain.slice(0, 2).join(", ")}`);
+  if ((model.pressures?.length ?? 0) > 0) {
+    const pressures = model.pressures ?? [];
+    const top = pressures.find((p) => p.level > 0) ?? pressures[0];
+    if (top) {
+      parts.push(
+        `Pressure on ${top.nodeLabel}: ${top.level}% — ${top.recommendationDetail}`,
+      );
+    }
   }
 
   const recommended = model.options.find((o) => o.id === model.recommendedOptionId);
@@ -406,12 +457,23 @@ export function buildMentalModelFromText(
     /\bcreative\s+investment/i.test(text) ||
     (/\binvestment/i.test(text) && /\bartist/i.test(text) && /\bpractice\b/i.test(text));
 
+  const evidence = isCI
+    ? mergeEvidence(context.evidence, demoEvidenceForExchange(exchangeCount))
+    : context.evidence;
+
   let model = isCI
-    ? buildCreativeInvestmentsModel(exchangeCount)
+    ? buildCreativeInvestmentsModel(exchangeCount, evidence)
     : buildGenericMentalModel(text, context, exchangeCount);
 
   if (prior && lastReply) {
-    model = evolveMentalModel(prior, lastReply, exchangeCount);
+    model = evolveMentalModel(prior, lastReply, exchangeCount, evidence);
+  }
+
+  if (!model.pressures || model.pressures.length === 0) {
+    model.pressures = computeNodePressures(model.nodes, evidence, {
+      momentumLinked: model.nodes.some((n) => n.label === "Momentum" && n.state === "locked"),
+      practiceBoundaryLocked: model.nodes.some((n) => n.label === "Practice" && n.state === "locked"),
+    });
   }
 
   return model;
@@ -427,8 +489,8 @@ export function syncAnalysisFromModel(
   analysis.mentalModel = model;
   analysis.confidence = modelOverallConfidence(model);
   analysis.currentUnderstanding = renderModelTreeAscii(model);
-  analysis.remainingUnknowns = model.openQuestions;
-  analysis.architecturalQuestions = model.openQuestions;
+  analysis.remainingUnknowns = pressuresToObservations(model.pressures);
+  analysis.architecturalQuestions = [];
   analysis.architectMessage = buildModelDeltaMessage(model);
 
   analysis.strongOpinions = model.options.map(
@@ -500,7 +562,7 @@ export function mentalModelFromLegacyAnalysis(
     })),
     recommendedOptionId: null,
     changes: exchangeCount > 0 ? [{ type: "new_node", summary: concept }] : [],
-    openQuestions: analysis.remainingUnknowns ?? analysis.architecturalQuestions ?? [],
+    pressures: [],
   };
 }
 
@@ -528,9 +590,14 @@ export function buildInitiativeFromModel(analysis: ArchitectAnalysis): string {
       return `### ${o.label}${rec} — ${o.confidence}%\n\n\`\`\`\n${o.preview}\n\`\`\`\n\n${o.reason}`;
     }),
     "",
-    "## Open Questions",
+    "## Architectural Pressure",
     "",
-    ...model.openQuestions.map((q) => `- ${q}`),
+    ...(model.pressures?.length
+      ? model.pressures.map(
+          (p) =>
+            `### ${p.nodeLabel}\n\n- **${p.label}:** ${p.level}%\n- **Recommendation:** ${p.recommendationDetail}\n- **Evidence:** ${p.evidence.map((e) => `${e.label} (${e.count})`).join(", ")}`,
+        )
+      : ["_No architectural pressure detected — model is stable._"]),
     "",
     "## Epics",
     "",
