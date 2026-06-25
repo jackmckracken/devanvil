@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useRef, useState } from "react";
 import type { ArchitectAnalysis, ArchitectSessionView } from "@/lib/architect/types";
 import { ArchitectMentalModelCanvas } from "@/components/architect/architect-mental-model-canvas";
-import { modelOverallConfidence } from "@/lib/architect/mental-model";
+import { hasUnsettledModel } from "@/lib/architect/present";
 
 export function ArchitectWorkspace({ initialSession }: { initialSession: ArchitectSessionView }) {
   const router = useRouter();
@@ -75,7 +75,7 @@ export function ArchitectWorkspace({ initialSession }: { initialSession: Archite
           </Link>
           <h1 className="mt-1 text-2xl font-semibold text-zinc-900">Architect</h1>
           <p className="text-sm text-zinc-500">
-            Watch the architecture become visible — the model is the artifact.
+            Understanding settles here — not another dashboard.
           </p>
           {session.captureId && (
             <p className="mt-1 text-xs text-zinc-400">
@@ -151,7 +151,7 @@ export function ArchitectWorkspace({ initialSession }: { initialSession: Archite
         {/* Primary: living mental model */}
         <section className="overflow-y-auto rounded-xl border border-violet-200 bg-white shadow-sm lg:col-span-6">
           <h2 className="border-b border-violet-100 bg-violet-50/50 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-violet-600">
-            Mental Model
+            What exists — and what still needs thinking
           </h2>
           <div className="p-5">
             {analysis?.mentalModel ? (
@@ -238,56 +238,40 @@ export function ArchitectWorkspace({ initialSession }: { initialSession: Archite
       {/* Bottom: Suggestions & Actions */}
       {analysis && isActive && (
         <footer className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
-          <div className="grid gap-4 md:grid-cols-3">
-            <div>
-              <h3 className="text-xs font-semibold uppercase text-zinc-400">
-                Suggested Initiative
-              </h3>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-medium uppercase tracking-wide text-zinc-400">
+                Ready to commit this understanding?
+              </p>
               <p className="mt-1 font-medium text-zinc-900">
                 {analysis.suggestedInitiative.title}
               </p>
-              <p className="mt-1 text-sm text-zinc-500 line-clamp-2">
-                {analysis.suggestedInitiative.description}
-              </p>
-              <p className="mt-1 text-xs text-violet-600">
-                Model confidence{" "}
-                {analysis.mentalModel ? modelOverallConfidence(analysis.mentalModel) : analysis.confidence}%
-                {" · "}snapshot from architecture
+              <p className="mt-1 text-sm text-zinc-500">
+                {analysis.mentalModel && hasUnsettledModel(analysis.mentalModel)
+                  ? "Some uncertainty remains — you can still snapshot what you understand now."
+                  : "The model has settled enough to preserve as an initiative snapshot."}
               </p>
             </div>
-            <div>
-              <h3 className="text-xs font-semibold uppercase text-zinc-400">Suggested Epics</h3>
-              <ul className="mt-1 flex flex-wrap gap-1.5">
-                {analysis.suggestedEpics.map((epic) => (
-                  <li
-                    key={epic}
-                    className="rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs text-zinc-700"
-                  >
-                    {epic}
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="flex flex-wrap items-end gap-2">
+            <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
               <button
                 type="button"
                 onClick={() => void createInitiative()}
                 disabled={loading}
-                className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+                className="rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
               >
-                Create Initiative
+                I&apos;m ready
               </button>
               <button
                 type="button"
                 onClick={() => bottomRef.current?.scrollIntoView({ behavior: "smooth" })}
                 className="rounded-lg border border-violet-200 px-4 py-2 text-sm font-medium text-violet-700 hover:bg-violet-50"
               >
-                Continue Architecting
+                Keep refining
               </button>
               <button
                 type="button"
                 onClick={() => void discard()}
-                className="rounded-lg px-4 py-2 text-sm text-zinc-400 hover:text-zinc-600"
+                className="rounded-lg px-3 py-2 text-sm text-zinc-400 hover:text-zinc-600"
               >
                 Discard
               </button>

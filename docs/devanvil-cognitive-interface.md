@@ -232,6 +232,27 @@ The best architectures are discovered, not invented. Premature specialization is
 
 ---
 
+## v4 — Reduce Uncertainty, Not Display Information
+
+Every Architect feature must pass:
+
+> Does this reduce uncertainty, or merely display more information?
+
+Architect is not a dashboard. It is an environment where understanding settles.
+
+| Principle | Implementation |
+|-----------|----------------|
+| Conclusions over metrics | Belief language, not percentages in the UI |
+| Uncertainty as focus | Settled nodes fade; only open areas attract attention |
+| One question per section | Each panel answers a single architectural question |
+| No duplicate homes | Pressure owns evolution signals; tree owns structure |
+| Living model | "Boundary settled" not "confidence +6%" |
+| Initiative = readiness | "I'm ready" — snapshot of understanding, not form completion |
+
+Do not build Bloom visuals, graph canvases, or force-directed layouts until the Mental Model is indispensable.
+
+---
+
 ## The Next Evolution
 
 Today's Mental Model is still textual.

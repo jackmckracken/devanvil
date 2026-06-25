@@ -4,9 +4,18 @@ import {
   computeNodePressures,
   demoEvidenceForExchange,
   mergeEvidence,
-  pressuresToObservations,
   recommendationFromLevel,
 } from "@/lib/architect/pressure";
+import {
+  architectBeliefForPressure,
+  changeToLivingLanguage,
+  formatEvidenceBrief,
+  isArchitectureContested,
+  modelDeltaMessage,
+  pressuresNeedingAttention,
+  pressuresToBeliefs,
+  relationshipBelief,
+} from "@/lib/architect/present";
 import type { ArchitectAnalysis } from "@/lib/architect/types";
 import type {
   ArchitectMentalModel,
@@ -399,28 +408,7 @@ export function modelOverallConfidence(model: ArchitectMentalModel): number {
 }
 
 export function buildModelDeltaMessage(model: ArchitectMentalModel): string {
-  const parts: string[] = ["Model updated."];
-
-  if (model.changes.length > 0) {
-    parts.push(model.changes.map((c) => c.summary).join(" · "));
-  }
-
-  if ((model.pressures?.length ?? 0) > 0) {
-    const pressures = model.pressures ?? [];
-    const top = pressures.find((p) => p.level > 0) ?? pressures[0];
-    if (top) {
-      parts.push(
-        `Pressure on ${top.nodeLabel}: ${top.level}% — ${top.recommendationDetail}`,
-      );
-    }
-  }
-
-  const recommended = model.options.find((o) => o.id === model.recommendedOptionId);
-  if (recommended) {
-    parts.push(`Leading: ${recommended.label} (${recommended.confidence}%)`);
-  }
-
-  return parts.join("\n");
+  return modelDeltaMessage(model);
 }
 
 export function renderModelTreeAscii(model: ArchitectMentalModel): string {
@@ -489,7 +477,7 @@ export function syncAnalysisFromModel(
   analysis.mentalModel = model;
   analysis.confidence = modelOverallConfidence(model);
   analysis.currentUnderstanding = renderModelTreeAscii(model);
-  analysis.remainingUnknowns = pressuresToObservations(model.pressures);
+  analysis.remainingUnknowns = pressuresToBeliefs(model.pressures ?? []);
   analysis.architecturalQuestions = [];
   analysis.architectMessage = buildModelDeltaMessage(model);
 
@@ -579,25 +567,33 @@ export function buildInitiativeFromModel(analysis: ArchitectAnalysis): string {
     "",
     "## Relationships",
     "",
-    ...model.relationships.map(
-      (r) => `- **${r.fromLabel}** → ${r.label} → **${r.toLabel}** (${r.confidence}%)`,
-    ),
+    ...model.relationships.map((r) => `- ${relationshipBelief(r)}`),
     "",
-    "## Architectural Options",
-    "",
-    ...model.options.map((o) => {
-      const rec = o.id === model.recommendedOptionId ? " _(recommended)_" : "";
-      return `### ${o.label}${rec} — ${o.confidence}%\n\n\`\`\`\n${o.preview}\n\`\`\`\n\n${o.reason}`;
-    }),
-    "",
+    ...(isArchitectureContested(model)
+      ? [
+          "## Competing Structures",
+          "",
+          ...model.options.map((o) => {
+            const rec = o.id === model.recommendedOptionId ? " _(leading)_" : "";
+            return `### ${o.label}${rec}\n\n\`\`\`\n${o.preview}\n\`\`\`\n\n${o.reason}`;
+          }),
+          "",
+        ]
+      : []),
     "## Architectural Pressure",
     "",
-    ...(model.pressures?.length
-      ? model.pressures.map(
-          (p) =>
-            `### ${p.nodeLabel}\n\n- **${p.label}:** ${p.level}%\n- **Recommendation:** ${p.recommendationDetail}\n- **Evidence:** ${p.evidence.map((e) => `${e.label} (${e.count})`).join(", ")}`,
-        )
-      : ["_No architectural pressure detected — model is stable._"]),
+    ...(pressuresNeedingAttention(model.pressures ?? []).length > 0
+      ? pressuresNeedingAttention(model.pressures ?? []).map((p) => {
+          const evidence = formatEvidenceBrief(p.evidence);
+          return `### ${p.nodeLabel}\n\n${architectBeliefForPressure(p)}${evidence ? `\n\nEvidence: ${evidence}` : ""}`;
+        })
+      : ["_The current model holds._"]),
+    "",
+    "## Model Evolution",
+    "",
+    ...(model.changes.length > 0
+      ? model.changes.map((c) => `- ${changeToLivingLanguage(c)}`)
+      : ["_No recent changes._"]),
     "",
     "## Epics",
     "",

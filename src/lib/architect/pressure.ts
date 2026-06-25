@@ -6,6 +6,7 @@ import type {
   PressureKind,
   PressureRecommendation,
 } from "@/lib/architect/mental-model-types";
+import { pressureObservation, pressuresToBeliefs } from "@/lib/architect/present";
 
 const RECOMMENDATION_COPY: Record<
   PressureRecommendation,
@@ -213,13 +214,11 @@ export function computeNodePressures(
 }
 
 export function pressureSummary(pressure: ArchitecturalPressure): string {
-  return `${pressure.nodeLabel}: ${pressure.recommendationDetail} (${pressure.level}% ${pressure.label.toLowerCase()})`;
+  return pressureObservation(pressure);
 }
 
 export function pressuresToObservations(pressures: ArchitecturalPressure[]): string[] {
-  return pressures
-    .filter((p) => p.level > 0 || p.nodeLabel === "Capability")
-    .map(pressureSummary);
+  return pressuresToBeliefs(pressures);
 }
 
 /** Demo evidence when DB is sparse but the session is about Creative Investments. */
