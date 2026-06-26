@@ -2,6 +2,7 @@ import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client";
 import { seedProtectedDomains } from "../src/lib/protected-domains/seed";
+import { seedPrinciplesAndResearch } from "../src/lib/principles/seed";
 
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) {
@@ -51,6 +52,11 @@ async function main() {
 
   const domainCount = await seedProtectedDomains(prisma, "studioops");
   console.log(`Seeded ${domainCount} protected domains for studioops.`);
+
+  const ontology = await seedPrinciplesAndResearch(prisma);
+  console.log(
+    `Seeded ${ontology.principles} principles, ${ontology.questions} research questions, ${ontology.theses} theses.`,
+  );
 }
 
 main()

@@ -1,6 +1,19 @@
 import Link from "next/link";
 import type { RankedReadyItem } from "@/lib/initiatives/ready-items";
 
+function estimateEffort(item: RankedReadyItem): string {
+  if (item.priority === "urgent") return "~2 hours";
+  if (item.priority === "high") return "~4 hours";
+  if (item.status === "approved") return "~4–6 hours";
+  return "~1 day";
+}
+
+function estimateRisk(item: RankedReadyItem): string {
+  if (item.blocked) return "High — blocked";
+  if (item.blockers.length > 0) return "Medium";
+  return "Low";
+}
+
 export function RecommendedNextItemPanel({
   item,
   recommendedAction,
@@ -8,45 +21,69 @@ export function RecommendedNextItemPanel({
   item: RankedReadyItem;
   recommendedAction: string;
 }) {
+  const whyReasons = item.rankingReasons.slice(0, 3);
+  const dependentCount = item.blockers.length;
+
   return (
-    <section className="rounded-xl border-2 border-orange-400 bg-gradient-to-br from-orange-50 to-amber-50 p-5 shadow-sm">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-orange-700">
-            Recommended Next Item
-          </p>
+    <section className="rounded-xl border-2 border-orange-300 bg-gradient-to-br from-orange-50 to-amber-50 p-6 shadow-sm">
+      <p className="text-xs font-semibold uppercase tracking-widest text-orange-600">
+        If I only worked two hours today...
+      </p>
+      <Link
+        href={`/queue/${item.id}`}
+        className="mt-2 block text-2xl font-semibold tracking-tight text-orange-950 hover:underline"
+      >
+        {item.title}
+      </Link>
+
+      {item.initiative && (
+        <p className="mt-1 text-sm text-orange-800">
+          Investment:{" "}
           <Link
-            href={`/queue/${item.id}`}
-            className="mt-1 block text-xl font-semibold text-orange-950 hover:underline"
+            href={`/initiatives/${item.initiative.id}`}
+            className="font-medium hover:underline"
           >
-            {item.title}
+            {item.initiative.title}
           </Link>
-          {item.initiative && (
-            <p className="mt-1 text-sm text-orange-800">
-              Initiative:{" "}
-              <Link
-                href={`/initiatives/${item.initiative.id}`}
-                className="font-medium hover:underline"
-              >
-                {item.initiative.title}
-              </Link>
-            </p>
-          )}
-          <ul className="mt-2 space-y-0.5 text-sm text-orange-800">
-            {item.rankingReasons.map((reason) => (
+        </p>
+      )}
+
+      <div className="mt-5 grid gap-4 sm:grid-cols-3">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-orange-600">
+            Why
+          </p>
+          <ul className="mt-1.5 space-y-0.5 text-sm text-orange-900">
+            {whyReasons.map((reason) => (
               <li key={reason}>· {reason}</li>
             ))}
+            {dependentCount > 0 && (
+              <li>· {dependentCount} dependent feature{dependentCount !== 1 ? "s" : ""} waiting</li>
+            )}
           </ul>
-          <p className="mt-3 text-xs text-orange-700">
-            Branch: <code className="rounded bg-orange-100 px-1">{item.suggestedBranch}</code>
-          </p>
-          <p className="mt-2 text-sm font-medium text-orange-900">{recommendedAction}</p>
         </div>
-        <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-full bg-orange-600 text-white">
-          <span className="text-lg font-bold leading-none">{item.score}</span>
-          <span className="text-[10px] uppercase">score</span>
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-orange-600">
+            Estimated Effort
+          </p>
+          <p className="mt-1.5 text-sm font-medium text-orange-900">
+            {estimateEffort(item)}
+          </p>
+        </div>
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-orange-600">
+            Risk
+          </p>
+          <p className="mt-1.5 text-sm font-medium text-orange-900">
+            {estimateRisk(item)}
+          </p>
         </div>
       </div>
+
+      <p className="mt-4 text-xs text-orange-700">
+        Branch: <code className="rounded bg-orange-100 px-1">{item.suggestedBranch}</code>
+      </p>
+      <p className="mt-1 text-sm text-orange-800">{recommendedAction}</p>
     </section>
   );
 }

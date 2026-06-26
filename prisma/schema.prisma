@@ -159,6 +159,50 @@ enum AuditSessionStatus {
   archived
 }
 
+enum ResearchQuestionStatus {
+  open
+  converging
+  answered
+  archived
+}
+
+enum ThesisStatus {
+  competing
+  leading
+  weakened
+  disproven
+  archived
+}
+
+enum EvidenceSource {
+  product_analytics
+  user_interview
+  artist_feedback
+  founder_observation
+  conference_notes
+  customer_conversation
+  research
+  experiment
+}
+
+enum EvidenceEffect {
+  supports
+  weakens
+  neutral
+}
+
+enum ResearchNoteKind {
+  article
+  book
+  paper
+  podcast
+  conference
+  interview
+  competitor
+  founder_observation
+  other
+}
+
 model Project {
   id          String        @id @default(cuid())
   name        String
@@ -174,6 +218,9 @@ model Project {
   investments           Investment[]
   architectSessions     ArchitectSession[]
   auditSessions         AuditSession[]
+  principleLinks        ProjectPrinciple[]
+  thesisLinks           ProjectThesis[]
+  executiveReviews      ExecutiveReview[]
 
   @@map("projects")
 }
@@ -441,14 +488,173 @@ model Initiative {
   project Project          @relation(fields: [projectId], references: [id])
   items   InitiativeItem[]
   investmentLinks InitiativeInvestment[]
+  thesisId         String?          @map("thesis_id")
   architectSession ArchitectSession?
   auditSession     AuditSession?
+  thesis           Thesis?          @relation(fields: [thesisId], references: [id], onDelete: SetNull)
 
   @@index([projectId])
   @@index([status])
   @@index([priority])
   @@index([strategicValue])
+  @@index([thesisId])
   @@map("initiatives")
+}
+
+model Principle {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  description String
+  originStory String?  @map("origin_story")
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  researchQuestions ResearchQuestion[]
+  thesisLinks       ThesisPrinciple[]
+  projectLinks      ProjectPrinciple[]
+
+  @@map("principles")
+}
+
+model ResearchQuestion {
+  id                   String                 @id @default(cuid())
+  principleId          String?                @map("principle_id")
+  question             String
+  whyItMatters         String?                @map("why_it_matters")
+  currentUnderstanding String?                @map("current_understanding")
+  unknowns             Json                   @default("[]")
+  status               ResearchQuestionStatus @default(open)
+  nextExperiment       String?                @map("next_experiment")
+  brainstormJson       Json?                  @map("brainstorm_json")
+  createdAt            DateTime               @default(now()) @map("created_at")
+  updatedAt            DateTime               @updatedAt @map("updated_at")
+
+  principle     Principle?     @relation(fields: [principleId], references: [id], onDelete: SetNull)
+  theses        Thesis[]
+  researchNotes ResearchNote[]
+
+  @@index([principleId])
+  @@index([status])
+  @@map("research_questions")
+}
+
+model Thesis {
+  id                 String       @id @default(cuid())
+  researchQuestionId String       @map("research_question_id")
+  statement          String
+  confidence         Int          @default(50)
+  status             ThesisStatus @default(competing)
+  createdAt          DateTime     @default(now()) @map("created_at")
+  updatedAt          DateTime     @updatedAt @map("updated_at")
+
+  researchQuestion    ResearchQuestion      @relation(fields: [researchQuestionId], references: [id], onDelete: Cascade)
+  principleLinks      ThesisPrinciple[]
+  projectLinks        ProjectThesis[]
+  initiatives         Initiative[]
+  evidenceItems       Evidence[]
+  confidenceSnapshots ConfidenceSnapshot[]
+
+  @@index([researchQuestionId])
+  @@index([status])
+  @@map("theses")
+}
+
+model Evidence {
+  id          String         @id @default(cuid())
+  thesisId    String         @map("thesis_id")
+  title       String
+  description String?
+  source      EvidenceSource
+  effect      EvidenceEffect @default(supports)
+  strength    Int            @default(50)
+  createdAt   DateTime       @default(now()) @map("created_at")
+
+  thesis Thesis @relation(fields: [thesisId], references: [id], onDelete: Cascade)
+
+  @@index([thesisId])
+  @@map("evidence")
+}
+
+model ResearchNote {
+  id                 String           @id @default(cuid())
+  researchQuestionId String           @map("research_question_id")
+  kind               ResearchNoteKind
+  title              String
+  url                String?
+  excerpt            String?
+  createdAt          DateTime         @default(now()) @map("created_at")
+
+  researchQuestion ResearchQuestion @relation(fields: [researchQuestionId], references: [id], onDelete: Cascade)
+
+  @@index([researchQuestionId])
+  @@map("research_notes")
+}
+
+model ConfidenceSnapshot {
+  id         String   @id @default(cuid())
+  thesisId   String   @map("thesis_id")
+  confidence Int
+  reason     String?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  thesis Thesis @relation(fields: [thesisId], references: [id], onDelete: Cascade)
+
+  @@index([thesisId])
+  @@map("confidence_snapshots")
+}
+
+model ExecutiveReview {
+  id          String   @id @default(cuid())
+  projectId   String?  @map("project_id")
+  periodStart DateTime @map("period_start")
+  periodEnd   DateTime @map("period_end")
+  summaryJson Json     @map("summary_json")
+  notes       String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  project Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  @@index([projectId])
+  @@index([periodEnd])
+  @@map("executive_reviews")
+}
+
+model ThesisPrinciple {
+  id          String @id @default(cuid())
+  thesisId    String @map("thesis_id")
+  principleId String @map("principle_id")
+
+  thesis    Thesis    @relation(fields: [thesisId], references: [id], onDelete: Cascade)
+  principle Principle @relation(fields: [principleId], references: [id], onDelete: Cascade)
+
+  @@unique([thesisId, principleId])
+  @@map("thesis_principles")
+}
+
+model ProjectPrinciple {
+  id          String @id @default(cuid())
+  projectId   String @map("project_id")
+  principleId String @map("principle_id")
+
+  project   Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  principle Principle @relation(fields: [principleId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, principleId])
+  @@map("project_principles")
+}
+
+model ProjectThesis {
+  id        String @id @default(cuid())
+  projectId String @map("project_id")
+  thesisId  String @map("thesis_id")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  thesis  Thesis  @relation(fields: [thesisId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, thesisId])
+  @@map("project_theses")
 }
 
 model InitiativeItem {
