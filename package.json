@@ -12,6 +12,7 @@
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
     "db:setup": "prisma migrate dev && tsx prisma/seed.ts",
+    "postinstall": "prisma generate",
     "import:studioops": "tsx scripts/import-studioops.ts",
     "curate:items": "tsx scripts/curate-items.ts",
     "seed:initiatives": "tsx scripts/seed-initiatives.ts",

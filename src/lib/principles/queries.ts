@@ -43,6 +43,12 @@ export async function getPrincipleBySlug(prisma: PrismaClient, slug: string) {
 }
 
 export async function ensurePrinciplesSeeded(prisma: PrismaClient) {
+  if (!("principle" in prisma) || prisma.principle == null) {
+    throw new Error(
+      "Prisma client is missing ontology models. Run: npx prisma generate && restart the dev server.",
+    );
+  }
+
   const count = await prisma.principle.count();
   if (count === 0) {
     const { seedPrinciplesAndResearch } = await import("@/lib/principles/seed");
